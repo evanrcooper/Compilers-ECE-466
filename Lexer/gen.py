@@ -1,5 +1,5 @@
 with open('tokens.h', 'r') as file:
-    lines = file.readlines()[8:-1]
+    lines = file.readlines()[8:-2]
 
 
 str_builder = ''

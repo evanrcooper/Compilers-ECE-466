@@ -20,6 +20,8 @@ typedef union {
 
 %%
 
+";"            {return SEMICOLON;}
+
 "->"            {return INDSEL;}
 "++"            {return PLUSPLUS;}
 "--"            {return MINUSMINUS;}

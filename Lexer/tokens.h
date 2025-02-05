@@ -66,4 +66,5 @@ enum tokens {
 	_BOOL, // _bool
 	_COMPLEX, // _complex
 	_IMAGINARY, // _imaginary
+	SEMICOLON, // ;
 };
