@@ -1,9 +1,12 @@
 enum tokens {
 	TOKEOF=0, // end of file
 	IDENT=257, // identifier (i.e. variable name, typedef name)
+	SKIP, // skip this token
 	CHARLIT, // char literal (i.e. 'x')
-	STRING, // string literal (i.e. "string")
-	NUMBER, // number literal(i.e. 0x059859 or 5000)
+	STRINGLIT, // string literal (i.e. "string")
+	NUMBERLIT, // number literal(i.e. 0x059859 or 5000)
+	FLOATLIT, // float literal
+	IMAGINARYLIT, // imaginary literal or imaginary part of complex literal
 	INDSEL, // ->
 	PLUSPLUS, // ++
 	MINUSMINUS, // --
@@ -19,7 +22,7 @@ enum tokens {
 	TIMESEQ, // *=
 	DIVEQ, // /=
 	MODEQ, // %=
-	PLUSEQ, // ==
+	PLUSEQ, // +=
 	MINUSEQ, // -=
 	SHLEQ, // <<=
 	SHREQ, // >>=
@@ -59,8 +62,8 @@ enum tokens {
 	UNSIGNED, // unsigned
 	VOID, // void
 	VOLATILE, // volatile
-	WHILE, // hile
-	_BOOL, // bool
-	_COMPLEX, // complex
-	_IMAGINARY // imaginary
+	WHILE, // while
+	_BOOL, // _bool
+	_COMPLEX, // _complex
+	_IMAGINARY, // _imaginary
 };
