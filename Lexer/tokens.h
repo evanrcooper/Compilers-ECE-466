@@ -2,6 +2,7 @@ enum tokens {
 	TOKEOF=0, // end of file
 	IDENT=257, // identifier (i.e. variable name, typedef name)
 	SKIP, // skip this token
+	NEWLINE, // \n
 	CHARLIT, // char literal (i.e. 'x')
 	STRINGLIT, // string literal (i.e. "string")
 	NUMBERLIT, // number literal(i.e. 0x059859 or 5000)

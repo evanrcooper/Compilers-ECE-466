@@ -88,10 +88,8 @@ typedef union {
 
 \n {
     line_number++; 
-    return SKIP;
+    return NEWLINE;
 } /* catch newline and add line to line number */
-
-
 
 #" "*[0-9]+" "*\".+\"" "*[0-9 ]+ { /* match preprocesser lines '# 41 main.c 1' and catch new filename and new line number */
     char extracted_filename[256];
@@ -171,10 +169,9 @@ int main(int argc, char *argv[]) {
     int tok_id = yylex();
 
     do {
-        if (tok_id == SKIP) {
-			// printf("TOKID: %d, LINE_NUM: %d\n", tok_id, line_number);
-		}
-		else if (tok_id == NUMBERLIT) {
+        if (tok_id == NEWLINE) 
+            printf("NEWLINE\n");
+		} else if (tok_id == NUMBERLIT) {
 			printf("TOKID: %d, LINE_NUM: %d, NUMLIT: %lld, TOKEN: %s\n", tok_id, line_number, yylval.int_val, yytext);
 		} else if (tok_id == FLOATLIT) {
 			printf("TOKID: %d, LINE_NUM: %d, FLIT: %Lf, TOKEN: %s\n", tok_id, line_number, yylval.real_val, yytext);
