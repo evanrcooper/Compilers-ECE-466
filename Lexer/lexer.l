@@ -20,7 +20,7 @@ typedef union {
 
 %%
 
-";"            {return SEMICOLON;}
+";"             {return SEMICOLON;}
 
 "->"            {return INDSEL;}
 "++"            {return PLUSPLUS;}
@@ -84,8 +84,6 @@ typedef union {
 "_complex"      {return _COMPLEX;}
 "_imaginary"    {return _IMAGINARY;}
 
-
-
 \n {
     line_number++; 
     return NEWLINE;
@@ -144,7 +142,7 @@ typedef union {
     yylval.real_val = (long double) strtold(yytext, NULL);
     return FLOATLIT;
 }
-[-+]?0[xX]([0-9A-Fa-f]+([.][0-9A-Fa-f]*)?|[.][0-9A-Fa-f]+)([pP][+-]?[0-9]+)?[fFlL]? { /* decimal floats and exponents */
+[-+]?0[xX]([0-9A-Fa-f]+([.][0-9A-Fa-f]*)?|[.][0-9A-Fa-f]+)([pP][+-]?[0-9]+)?[fFlL]? { /* hex floats and exponents */
     /* https://stackoverflow.com/a/12643073 */
     yylval.real_val = (long double) strtold(yytext, NULL);
     return FLOATLIT;
@@ -169,7 +167,7 @@ int main(int argc, char *argv[]) {
     int tok_id = yylex();
 
     do {
-        if (tok_id == NEWLINE) 
+        if (tok_id == NEWLINE) {
             printf("NEWLINE\n");
 		} else if (tok_id == NUMBERLIT) {
 			printf("TOKID: %d, LINE_NUM: %d, NUMLIT: %lld, TOKEN: %s\n", tok_id, line_number, yylval.int_val, yytext);

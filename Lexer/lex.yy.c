@@ -1235,12 +1235,12 @@ YY_RULE_SETUP
 #line 89 "lexer.l"
 {
     line_number++; 
-    return SKIP;
+    return NEWLINE;
 } /* catch newline and add line to line number */
 	YY_BREAK
 case 62:
 YY_RULE_SETUP
-#line 96 "lexer.l"
+#line 94 "lexer.l"
 { /* match preprocesser lines '# 41 main.c 1' and catch new filename and new line number */
     char extracted_filename[256];
     if (sscanf(yytext, "# %d \"%255[^\"]\"", &line_number, extracted_filename) >= 2) {
@@ -1251,7 +1251,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 63:
 YY_RULE_SETUP
-#line 105 "lexer.l"
+#line 103 "lexer.l"
 { /* zero literal octal/decimal */
     yylval.int_val = 0;
     return NUMBERLIT;
@@ -1259,7 +1259,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 64:
 YY_RULE_SETUP
-#line 109 "lexer.l"
+#line 107 "lexer.l"
 { /* decimal numbers */
     yylval.int_val = strtoll(yytext, NULL, 10);
     return NUMBERLIT;
@@ -1267,7 +1267,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 65:
 YY_RULE_SETUP
-#line 113 "lexer.l"
+#line 111 "lexer.l"
 { /* binary numbers */
     if (yytext[0] == '+') {
         yylval.int_val = (long long int) strtoll(yytext+3, NULL, 2);
@@ -1281,7 +1281,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 66:
 YY_RULE_SETUP
-#line 123 "lexer.l"
+#line 121 "lexer.l"
 { /* hex numbers */
     if (yytext[0] == '+') {
         yylval.int_val = (long long int) strtoll(yytext+3, NULL, 16);
@@ -1295,7 +1295,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 67:
 YY_RULE_SETUP
-#line 133 "lexer.l"
+#line 131 "lexer.l"
 { /* octal numbers */
     if (yytext[0] == '+') {
         yylval.int_val = (long long int) strtoll(yytext+2, NULL, 8);
@@ -1308,7 +1308,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 68:
 YY_RULE_SETUP
-#line 144 "lexer.l"
+#line 142 "lexer.l"
 { /* decimal floats and exponents */
     /* https://stackoverflow.com/a/12643073 */
     yylval.real_val = (long double) strtold(yytext, NULL);
@@ -1317,7 +1317,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 69:
 YY_RULE_SETUP
-#line 149 "lexer.l"
+#line 147 "lexer.l"
 { /* decimal floats and exponents */
     /* https://stackoverflow.com/a/12643073 */
     yylval.real_val = (long double) strtold(yytext, NULL);
@@ -1326,7 +1326,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 70:
 YY_RULE_SETUP
-#line 156 "lexer.l"
+#line 154 "lexer.l"
 {
     yylval.real_val = (long double) strtod(yytext, NULL);
     return IMAGINARYLIT;
@@ -1334,7 +1334,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 71:
 YY_RULE_SETUP
-#line 161 "lexer.l"
+#line 159 "lexer.l"
 {
     yylval.real_val = (long double) strtod(yytext, NULL);
     return IMAGINARYLIT;
@@ -1342,12 +1342,12 @@ YY_RULE_SETUP
 	YY_BREAK
 case 72:
 YY_RULE_SETUP
-#line 166 "lexer.l"
+#line 164 "lexer.l"
 {return IDENT;}
 	YY_BREAK
 case 73:
 YY_RULE_SETUP
-#line 168 "lexer.l"
+#line 166 "lexer.l"
 ECHO;
 	YY_BREAK
 #line 1354 "lex.yy.c"
@@ -2355,17 +2355,16 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 168 "lexer.l"
+#line 166 "lexer.l"
 
 
 int main(int argc, char *argv[]) {
     int tok_id = yylex();
 
     do {
-        if (tok_id == SKIP) {
-			// printf("TOKID: %d, LINE_NUM: %d\n", tok_id, line_number);
-		}
-		else if (tok_id == NUMBERLIT) {
+        if (tok_id == NEWLINE) {
+            printf("NEWLINE\n");
+		} else if (tok_id == NUMBERLIT) {
 			printf("TOKID: %d, LINE_NUM: %d, NUMLIT: %lld, TOKEN: %s\n", tok_id, line_number, yylval.int_val, yytext);
 		} else if (tok_id == FLOATLIT) {
 			printf("TOKID: %d, LINE_NUM: %d, FLIT: %Lf, TOKEN: %s\n", tok_id, line_number, yylval.real_val, yytext);
