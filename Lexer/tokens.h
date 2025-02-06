@@ -1,7 +1,6 @@
 enum tokens {
 	TOKEOF=0, // end of file
 	IDENT=257, // identifier (i.e. variable name, typedef name)
-	SKIP, // skip this token
 	NEWLINE, // \n
 	CHARLIT, // char literal (i.e. 'x')
 	STRINGLIT, // string literal (i.e. "string")
@@ -67,4 +66,5 @@ enum tokens {
 	_COMPLEX, // _complex
 	_IMAGINARY, // _imaginary
 	SEMICOLON, // ;
+	SKIP, // skip this token
 };

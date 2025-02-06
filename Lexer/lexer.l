@@ -104,7 +104,6 @@ typedef union {
     if (sscanf(yytext, "# %d \"%255[^\"]\"", &line_number, extracted_filename) >= 2) {
         filename = strdup(extracted_filename);
     }
-    return SKIP;
 }
 
 [-+]*[0]+ { /* zero literal octal/decimal */
@@ -321,6 +320,8 @@ typedef union {
 }
 
 [_A-Za-z][_A-Za-z0-9]* {return IDENT; /* yytext contains ident_name */}
+
+\s+ {}
 
 . {REJECT;}
 

@@ -11,7 +11,7 @@ extern int yyerror(const char *s);
 
 %%
 
-program:
+program: /* START */
     program expr_stmt
     | /* empty */
     ;
@@ -28,8 +28,6 @@ expr:
     | expr '-' expr
     | expr '*' expr
     | expr '/' expr
-
-    | expr '=' expr
 
     | expr '&' expr
     | expr '|' expr
@@ -52,10 +50,12 @@ expr:
     | expr EQEQ expr
     | expr NOTEQ expr
     | expr LOGAND expr
+    | expr LOGOR expr
     | expr SHL expr
     | expr SHR expr
     | expr LOGOR expr
 
+    | expr '=' expr
     | ident_stmt TIMESEQ expr
     | ident_stmt DIVEQ expr
     | ident_stmt MODEQ expr
