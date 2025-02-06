@@ -1,17 +1,11 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
-#include "ast.h"
 
 extern int yylex();
 extern int yyerror(const char *s);
-%}
 
-%union {
-    struct astnode *astnode_p;
-    char *ident;
-    int num;
-}
+%}
 
 %token IDENT NUMBER SEMICOLON PLUSPLUS MINUSMINUS INDSEL LTEQ GTEQ EQEQ NOTEQ LOGAND SHL SHR LOGOR TIMESEQ DIVEQ MODEQ PLUSEQ MINUSEQ SHLEQ SHREQ ANDEQ OREQ XOREQ POSTOP PREOP PAREN BRACKET
 
