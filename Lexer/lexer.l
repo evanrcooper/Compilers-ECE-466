@@ -322,6 +322,8 @@ typedef union {
 
 [_A-Za-z][_A-Za-z0-9]* {return IDENT;}
 
+. {REJECT;}
+
 %%
 
 int main(int argc, char *argv[]) {
