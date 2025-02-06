@@ -13,7 +13,7 @@ extern int yyerror(const char *s);
     int num;
 }
 
-%token IDENT NUMBER SEMICOLON PLUSPLUS MINUSMINUS INDSEL LTEQ GTEQ EQEQ NOTEQ LOGAND SHL SHR LOGOR TIMESEQ DIVEQ MODEQ PLUSEQ MINUSEQ SHLEQ SHREQ ANDEQ OREQ XOREQ POSTOP PREOP
+%token IDENT NUMBER SEMICOLON PLUSPLUS MINUSMINUS INDSEL LTEQ GTEQ EQEQ NOTEQ LOGAND SHL SHR LOGOR TIMESEQ DIVEQ MODEQ PLUSEQ MINUSEQ SHLEQ SHREQ ANDEQ OREQ XOREQ POSTOP PREOP PAREN BRACKET
 
 %%
 
@@ -49,7 +49,7 @@ expr:
     | '!' expr
     | '~' expr
 
-    | '(' expr ')'
+    | '(' expr ')' %prec PAREN
     | '+' expr
     | '-' expr
 
@@ -88,7 +88,8 @@ ident_stmt:
 
     | '*' ident_stmt
     | '&' ident_stmt
-    | ident_stmt '[' expr ']'
+    | ident_stmt '[' expr ']' %prec BRACKET
+    | '(' ident_stmt ')' %prec PAREN
 
 %%
 
