@@ -17,3 +17,7 @@ test_kws:
 test_chars:
 	make
 	./a.out < ../Assignment1/chars.c
+
+test_strs:
+	make
+	./a.out < ../Assignment1/strs.c
