@@ -107,7 +107,7 @@ typedef union {
     return SKIP;
 }
 
-[-+]?[0]+ { /* zero literal octal/decimal */
+[-+]*[0]+ { /* zero literal octal/decimal */
     yylval.int_val = 0;
     return NUMBERLIT;
 }
@@ -320,7 +320,7 @@ typedef union {
     return STRINGLIT;
 }
 
-[_A-Za-z][_A-Za-z0-9]* {return IDENT;}
+[_A-Za-z][_A-Za-z0-9]* {return IDENT; /* yytext contains ident_name */}
 
 . {REJECT;}
 
