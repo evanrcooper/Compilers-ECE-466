@@ -18,6 +18,9 @@ typedef union {
 
 %}
 
+%x char_lit
+%x str_lit
+
 %%
 
 ";"             {return SEMICOLON;}
@@ -149,6 +152,40 @@ typedef union {
     /* https://stackoverflow.com/a/12643073 */
     yylval.real_val = (long double) strtold(yytext, NULL);
     return FLOATLIT;
+}
+
+['] {BEGIN(char_lit);}
+
+<char_lit>\\[abefnrtv\\'"?]['] {
+    switch (yytext[1]) {
+        case 'a':
+        case 'b':
+        case 'e':
+        case 'f':
+        case 'n':
+        case 'r':
+        case 't':
+        case 'v':
+        case '\\':
+        case '\'':
+        case '\"':
+        case '\?':
+        default:
+    }
+    BEGIN(INITIAL);
+    return CHARLIT;
+}
+
+<char_lit>\\[xX][0-9A-Fa-f]{2}['] {
+    
+}
+
+<char_lit>\\[0-7]{3}['] {
+    
+}
+
+<char_lit>.['] {
+    
 }
 
 [_A-Za-z][_A-Za-z0-9]* {return IDENT;}
