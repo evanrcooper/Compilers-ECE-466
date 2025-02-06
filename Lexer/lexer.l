@@ -106,7 +106,7 @@ typedef union {
     }
 }
 
-[-+]*[0]+ { /* zero literal octal/decimal */
+[-+]?[0]+ { /* zero literal octal/decimal */
     yylval.int_val = 0;
     return NUMBERLIT;
 }

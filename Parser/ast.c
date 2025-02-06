@@ -128,44 +128,44 @@ void print_ast_node(int depth, ast_node *node);
 
 int main() {
     
-    // ast_node p;
-    // ast_node l1;
-    // ast_node l2;
-    // ast_node r2;
-    // ast_node r1;
-    // ast_node c1;
+    ast_node p;
+    ast_node l1;
+    ast_node l2;
+    ast_node r2;
+    ast_node r1;
+    ast_node c1;
 
-    // char *l1_name = "ident_name";
+    char *l1_name = "ident_name";
 
-    // p.node_type = BINOP;
-    // p.val.binop.op = TIMES;
-    // p.val.binop.left = &l1;
-    // p.val.binop.right = &r1;
+    p.node_type = BINOP;
+    p.val.binop.op = TIMES;
+    p.val.binop.left = &l1;
+    p.val.binop.right = &r1;
 
-    // l1.node_type = IDENT;
-    // l1.val.ident.ident_name = l1_name;
+    l1.node_type = IDENT;
+    l1.val.ident.ident_name = l1_name;
 
-    // r1.node_type = BINOP;
-    // r1.val.binop.op = LOG_AND;
-    // r1.val.binop.left = &l2;
-    // r1.val.binop.right = &r2;
+    r1.node_type = BINOP;
+    r1.val.binop.op = LOG_AND;
+    r1.val.binop.left = &l2;
+    r1.val.binop.right = &r2;
 
-    // l1.node_type = IDENT;
-    // l1.val.ident.ident_name = l1_name;
+    l1.node_type = IDENT;
+    l1.val.ident.ident_name = l1_name;
 
-    // l2.node_type = UNOP;
-    // l2.val.unop.op = NEG;
-    // l2.val.unop.center = &c1;
+    l2.node_type = UNOP;
+    l2.val.unop.op = NEG;
+    l2.val.unop.center = &c1;
 
-    // c1.node_type = NUMLIT;
-    // c1.val.numlit.type = LLI;
-    // c1.val.numlit.val.int_val = 16;
+    c1.node_type = NUMLIT;
+    c1.val.numlit.type = LLI;
+    c1.val.numlit.val.int_val = 16;
 
-    // r2.node_type = NUMLIT;
-    // r2.val.numlit.type = LLI;
-    // r2.val.numlit.val.int_val = 18;
+    r2.node_type = NUMLIT;
+    r2.val.numlit.type = LLI;
+    r2.val.numlit.val.int_val = 18;
 
-    // print_ast_node(0, &p);
+    print_ast_node(0, &p);
 
     return 0;
 }
