@@ -7,7 +7,6 @@ enum tokens {
 	STRINGLIT, // string literal (i.e. "string")
 	NUMBERLIT, // number literal(i.e. 0x059859 or 5000)
 	FLOATLIT, // float literal
-	IMAGINARYLIT, // imaginary literal or imaginary part of complex literal
 	INDSEL, // ->
 	PLUSPLUS, // ++
 	MINUSMINUS, // --

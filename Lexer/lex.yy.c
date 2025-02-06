@@ -1232,7 +1232,7 @@ YY_RULE_SETUP
 case 61:
 /* rule 61 can match eol */
 YY_RULE_SETUP
-#line 89 "lexer.l"
+#line 87 "lexer.l"
 {
     line_number++; 
     return NEWLINE;
@@ -1240,7 +1240,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 62:
 YY_RULE_SETUP
-#line 94 "lexer.l"
+#line 92 "lexer.l"
 { /* match preprocesser lines '# 41 main.c 1' and catch new filename and new line number */
     char extracted_filename[256];
     if (sscanf(yytext, "# %d \"%255[^\"]\"", &line_number, extracted_filename) >= 2) {
@@ -1251,7 +1251,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 63:
 YY_RULE_SETUP
-#line 103 "lexer.l"
+#line 100 "lexer.l"
 { /* zero literal octal/decimal */
     yylval.int_val = 0;
     return NUMBERLIT;
@@ -1259,7 +1259,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 64:
 YY_RULE_SETUP
-#line 107 "lexer.l"
+#line 105 "lexer.l"
 { /* decimal numbers */
     yylval.int_val = strtoll(yytext, NULL, 10);
     return NUMBERLIT;
@@ -1267,7 +1267,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 65:
 YY_RULE_SETUP
-#line 111 "lexer.l"
+#line 110 "lexer.l"
 { /* binary numbers */
     if (yytext[0] == '+') {
         yylval.int_val = (long long int) strtoll(yytext+3, NULL, 2);
@@ -1295,7 +1295,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 67:
 YY_RULE_SETUP
-#line 131 "lexer.l"
+#line 132 "lexer.l"
 { /* octal numbers */
     if (yytext[0] == '+') {
         yylval.int_val = (long long int) strtoll(yytext+2, NULL, 8);
@@ -1317,8 +1317,8 @@ YY_RULE_SETUP
 	YY_BREAK
 case 69:
 YY_RULE_SETUP
-#line 147 "lexer.l"
-{ /* decimal floats and exponents */
+#line 148 "lexer.l"
+{ /* hex floats and exponents */
     /* https://stackoverflow.com/a/12643073 */
     yylval.real_val = (long double) strtold(yytext, NULL);
     return FLOATLIT;

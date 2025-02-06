@@ -151,16 +151,6 @@ typedef union {
     return FLOATLIT;
 }
 
-[-+]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?[fFlL]?[iI] {
-    yylval.real_val = (long double) strtod(yytext, NULL);
-    return IMAGINARYLIT;
-}
-
-[-+]?0[xX]([0-9A-Fa-f]+([.][0-9A-Fa-f]*)?|[.][0-9A-Fa-f]+)([pP][+-]?[0-9]+)?[fFlL]?[iI] {
-    yylval.real_val = (long double) strtod(yytext, NULL);
-    return IMAGINARYLIT;
-}
-
 [_A-Za-z][_A-Za-z0-9]* {return IDENT;}
 
 %%
@@ -175,8 +165,6 @@ int main(int argc, char *argv[]) {
 			printf("TOKID: %d, LINE_NUM: %d, NUMLIT: %lld, TOKEN: %s\n", tok_id, line_number, yylval.int_val, yytext);
 		} else if (tok_id == FLOATLIT) {
 			printf("TOKID: %d, LINE_NUM: %d, FLIT: %Lf, TOKEN: %s\n", tok_id, line_number, yylval.real_val, yytext);
-		} else if (tok_id == IMAGINARYLIT) {
-			printf("TOKID: %d, LINE_NUM: %d, ILIT: %Lf, TOKEN: %s\n", tok_id, line_number, yylval.real_val, yytext);
 		} else {
 			printf("TOKID: %d, LINE_NUM: %d, TOKEN: %s\n", tok_id, line_number, yytext);
 		}
