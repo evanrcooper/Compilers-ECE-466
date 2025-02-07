@@ -16,6 +16,10 @@ enum unop_type { // op1 id1
     BIT_NOT, // ~
     POS, // +
     NEG, // -
+    PRE_PLUSPLUS, // ++x
+    PRE_MINUSMINUS, // --x
+    POST_PLUSPLUS, // x++
+    POST_MINUSMINUS, // x--
 };
 
 enum binop_type { // id1 op1 id2
@@ -121,9 +125,9 @@ typedef struct ast_node_struct {
     } val;
 } ast_node;
 
-char unop_to_char(enum unop_type type);
+char *unop_to_char(enum unop_type type);
 char *binop_to_str(enum binop_type type);
-char triop_to_char(enum triop_type type);
+char *triop_to_char(enum triop_type type);
 void print_ast_node(int depth, ast_node *node);
 
 int main() {
@@ -170,19 +174,41 @@ int main() {
     return 0;
 }
 
-char unop_to_char(enum unop_type type) {
+char *unop_to_char(enum unop_type type) {
+    char *ret_str;
+    char *msg;
     switch (type) {
         case NOT:
-            return '!';
+            msg = "!";
+            break;
         case BIT_NOT:
-            return '~';
+            msg = "~";
+            break;
         case POS:
-            return '+';
+            msg = "+";
+            break;
         case NEG:
-            return '-';
+            msg = "-";
+            break;
+        case PRE_PLUSPLUS:
+            msg = "++i";
+            break;
+        case PRE_MINUSMINUS:
+            msg = "--i";
+            break;
+        case POST_PLUSPLUS:
+            msg = "i++";
+            break;
+        case POST_MINUSMINUS:
+            msg = "i--";
+            break;
         default:
-            return 'X';
+            msg = "N/A";
+            break;
     }
+    ret_str = malloc(strlen(msg) + 1);
+    strcpy(ret_str, msg);
+    return ret_str;
 }
 
 char *binop_to_str(enum binop_type type) {
@@ -285,16 +311,24 @@ char *binop_to_str(enum binop_type type) {
     return ret_str;
 }
 
-char triop_to_char(enum triop_type type) {
+char *triop_to_char(enum triop_type type) {
+    char *ret_str;
+    char *msg;
     switch (type) {
         case TERNARY:
-            return '?';
+            msg = "?";
+            break;
         default:
-            return 'X';
+            msg = "N/A";
+            break;
     }
+    ret_str = malloc(strlen(msg) + 1);
+    strcpy(ret_str, msg);
+    return ret_str;
 }
 
 void print_ast_node(int depth, ast_node *node) {
+    char *op;
     for (int i = 0; i < depth; i++) {
         printf("-- ");
     }
@@ -319,18 +353,22 @@ void print_ast_node(int depth, ast_node *node) {
             printf("IDENT: %s\n", node->val.ident.ident_name);
             break;
         case UNOP:
-            printf("UNOP: %c\n", unop_to_char(node->val.unop.op));
+            op = unop_to_char(node->val.unop.op);
+            printf("UNOP: %s\n", op);
+            free(op);
             print_ast_node(depth + 1, node->val.unop.center);
             break;
         case BINOP:
-            char *op = binop_to_str(node->val.binop.op);
+            op = binop_to_str(node->val.binop.op);
             printf("BINOP: %s\n", op);
             free(op);
             print_ast_node(depth + 1, node->val.binop.left);
             print_ast_node(depth + 1, node->val.binop.right);
             break;
         case TRIOP:
-            printf("TRIOP: %c\n", unop_to_char(node->val.triop.op));
+            op = unop_to_char(node->val.triop.op);
+            printf("TRIOP: %s\n", op);
+            free(op);
             print_ast_node(depth + 1, node->val.triop.left);
             print_ast_node(depth + 1, node->val.triop.center);
             print_ast_node(depth + 1, node->val.triop.right);
