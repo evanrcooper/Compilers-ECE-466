@@ -1,11 +1,18 @@
 %{
 #include <stdio.h>
 #include "tokens.h"
+#include <stdio.h>
+#include <ctype.h>
 
 /* extern */ int line_number = 1;
 /* extern */ char *filename;
 
 #define DEFAULT_D_STR_LEN 32 /* >= 2 */
+
+typedef struct STATIC_STRING {
+    char *str_val;
+    unsigned long long str_len;
+} S_STRING;
 
 typedef struct DYNAMIC_STRING {
     char *str_val;
@@ -19,6 +26,7 @@ typedef union {
     long long int_val;
     long double real_val;
     char char_val;
+    S_STRING s_str_val;
 } YYSTYPE;
 
 /* extern */ YYSTYPE yylval;
@@ -30,7 +38,9 @@ typedef union {
 
 %%
 
-";"             {return SEMICOLON;}
+";"             {return ';';}
+"+"             {return '+';}
+"-"             {return '-';}
 
 "->"            {return INDSEL;}
 "++"            {return PLUSPLUS;}
@@ -96,7 +106,6 @@ typedef union {
 
 \n {
     line_number++; 
-    return NEWLINE;
 } /* catch newline and add line to line number */
 
 #" "*[0-9]+" "*\".+\"" "*[0-9 ]+ { /* match preprocesser lines '# 41 main.c 1' and catch new filename and new line number */
@@ -106,17 +115,17 @@ typedef union {
     }
 }
 
-[-+]?[0]+ { /* zero literal octal/decimal */
+[0]+ { /* zero literal octal/decimal */
     yylval.int_val = 0;
     return NUMBERLIT;
 }
 
-[-+]?[1-9][0-9]* { /* decimal numbers */
+[1-9][0-9]* { /* decimal numbers */
     yylval.int_val = strtoll(yytext, NULL, 10);
     return NUMBERLIT;
 }
 
-[-+]?0[bB][01]+ { /* binary numbers */
+0[bB][01]+ { /* binary numbers */
     if (yytext[0] == '+') {
         yylval.int_val = (long long int) strtoll(yytext+3, NULL, 2);
     } else if (yytext[0] == '-') {
@@ -127,7 +136,7 @@ typedef union {
     return NUMBERLIT;
 }
 
-[-+]?0[xX][0-9A-Fa-f]+ { /* hex numbers */
+0[xX][0-9A-Fa-f]+ { /* hex numbers */
     if (yytext[0] == '+') {
         yylval.int_val = (long long int) strtoll(yytext+3, NULL, 16);
     } else if (yytext[0] == '-') {
@@ -138,7 +147,7 @@ typedef union {
     return NUMBERLIT;
 }
 
-[-+]?0[0-7]+ { /* octal numbers */
+0[0-7]+ { /* octal numbers */
     if (yytext[0] == '+') {
         yylval.int_val = (long long int) strtoll(yytext+2, NULL, 8);
     } else if (yytext[0] == '-') {
@@ -148,13 +157,13 @@ typedef union {
     }    return NUMBERLIT;
 }
 
-[-+]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?[fFlL]? { /* decimal floats and exponents */
+([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?[fFlL]? { /* decimal floats and exponents */
     /* https://stackoverflow.com/a/12643073 */
     yylval.real_val = (long double) strtold(yytext, NULL);
     return FLOATLIT;
 }
 
-[-+]?0[xX]([0-9A-Fa-f]+([.][0-9A-Fa-f]*)?|[.][0-9A-Fa-f]+)([pP][+-]?[0-9]+)?[fFlL]? { /* hex floats and exponents */
+0[xX]([0-9A-Fa-f]+([.][0-9A-Fa-f]*)?|[.][0-9A-Fa-f]+)([pP][+-]?[0-9]+)?[fFlL]? { /* hex floats and exponents */
     /* https://stackoverflow.com/a/12643073 */
     yylval.real_val = (long double) strtold(yytext, NULL);
     return FLOATLIT;
@@ -241,6 +250,36 @@ typedef union {
     BEGIN(str_lit);
 }
 
+<str_lit>\\[xX][0-9A-Fa-f]{2}['] {
+    char *endptr = yytext + 4;
+    if (yylval.d_str_val->str_len + 2 > yylval.d_str_val->str_max_len) {
+        yylval.d_str_val->str_val = realloc(yylval.d_str_val->str_val, yylval.d_str_val->str_max_len * 2);
+        if (yylval.d_str_val->str_val == NULL) {
+            REJECT;
+        }
+        yylval.d_str_val->str_max_len *= 2;
+    }
+
+    yylval.d_str_val->str_val[yylval.d_str_val->str_len] = (char) strtoll(yytext + 2, &endptr, 16);
+
+    yylval.d_str_val->str_len += 1;
+}
+
+<str_lit>\\[0-7]{3}['] {
+    char *endptr = yytext + 4;
+    if (yylval.d_str_val->str_len + 2 > yylval.d_str_val->str_max_len) {
+        yylval.d_str_val->str_val = realloc(yylval.d_str_val->str_val, yylval.d_str_val->str_max_len * 2);
+        if (yylval.d_str_val->str_val == NULL) {
+            REJECT;
+        }
+        yylval.d_str_val->str_max_len *= 2;
+    }
+
+    yylval.d_str_val->str_val[yylval.d_str_val->str_len] = (char) strtoll(yytext + 1, &endptr, 8);
+    
+    yylval.d_str_val->str_len += 1;
+}
+
 <str_lit>\\[abefnrtv\\'"?0] {
     if (yylval.d_str_val->str_len + 2 > yylval.d_str_val->str_max_len) {
         yylval.d_str_val->str_val = realloc(yylval.d_str_val->str_val, yylval.d_str_val->str_max_len * 2);
@@ -314,7 +353,8 @@ typedef union {
     (void) memcpy((void*) temp_str, (void*) yylval.d_str_val->str_val, yylval.d_str_val->str_len + 1);
     free(yylval.d_str_val->str_val);
     free(yylval.d_str_val);
-    yylval.str_val = temp_str;
+    yylval.s_str_val.str_val = temp_str;
+    yylval.s_str_val.str_len = yylval.d_str_val->str_len + 1;
     BEGIN(INITIAL);
     return STRINGLIT;
 }
@@ -327,26 +367,53 @@ typedef union {
 
 %%
 
+void print_escaped_str(const char *input, unsigned long long length);
+void print_escaped_char(unsigned char c);
+
 int main(int argc, char *argv[]) {
     int tok_id = yylex();
 
     do {
-        if (tok_id == NEWLINE) {
-            printf("NEWLINE\n");
-		} else if (tok_id == NUMBERLIT) {
-			printf("TOKID: %d, LINE_NUM: %d, NUMLIT: %lld, TOKEN: %s\n", tok_id, line_number, yylval.int_val, yytext);
-		} else if (tok_id == FLOATLIT) {
-			printf("TOKID: %d, LINE_NUM: %d, FLIT: %Lf, TOKEN: %s\n", tok_id, line_number, yylval.real_val, yytext);
-		} else if (tok_id == CHARLIT) {
-            printf("TOKID: %d, LINE_NUM: %d, CHAR: \'%c\'\n", tok_id, line_number, yylval.char_val);
-        } else if (tok_id == STRINGLIT) {
-            printf("TOKID: %d, LINE_NUM: %d, STRLIT: \"%s\"\n", tok_id, line_number, yylval.str_val);
-        } else {
-			printf("TOKID: %d, LINE_NUM: %d, TOKEN: %s\n", tok_id, line_number, yytext);
-		}
+        switch (tok_id) {
+            case NUMBERLIT:
+                printf("TOKID: %d, LINE_NUM: %d, NUMLIT: %lld, TOKEN: %s\n", tok_id, line_number, yylval.int_val, yytext);
+                break;
+            case FLOATLIT:
+                printf("TOKID: %d, LINE_NUM: %d, FLIT: %Lf, TOKEN: %s\n", tok_id, line_number, yylval.real_val, yytext);
+                break;
+            case CHARLIT:
+                printf("TOKID: %d, LINE_NUM: %d, CHAR: \'", tok_id, line_number);
+                print_escaped_char((unsigned char) yylval.char_val);
+                printf("\'\n");
+                break;
+            case STRINGLIT:
+                printf("TOKID: %d, LINE_NUM: %d, STRLIT: \"", tok_id, line_number);
+                print_escaped_str(yylval.s_str_val.str_val, yylval.s_str_val.str_len);
+                printf("\"\n");
+                break;
+            default:
+                printf("TOKID: %d, LINE_NUM: %d, TOKEN: %s\n", tok_id, line_number, yytext);
+                break;
+        }
     } while (tok_id = yylex());
     
     return 0;
 }
 
 int yywrap(){return(1);}
+
+void print_escaped_char(unsigned char c) {
+    if (isprint(c)) {
+        putchar(c);
+    } else {
+        printf("\\x%02X", c);
+    }
+}
+
+void print_escaped_str(const char *input, unsigned long long length) {
+    if (!input) return;
+
+    for (unsigned long long i = 0; i < length; i++) {
+        print_escaped_char((unsigned char)input[i]);
+    }
+}
