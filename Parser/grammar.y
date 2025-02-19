@@ -1,13 +1,24 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
+#include "ast.h"
 
 extern int yylex();
 extern int yyerror(const char *s);
 
 %}
 
-%token 
+%union {
+    ast_node *node;
+}
+
+%token IDENT NUMLIT CHARLIT STRLIT
+%token PLUSPLUS MINUSMINUS
+%token INDSEL
+%token SHL SHR
+%token GEQ LEQ EQEQ NEQ
+%token LOGAND LOGOR
+%token TIMESEQ PLUSEQ XOREQ MINUSEQ DIVEQ MODEQ SHLEQ SHREQ ANDEQ OREQ
 
 %%
 
@@ -16,7 +27,7 @@ extern int yyerror(const char *s);
 /* 6.5 EXPRESSIONS */
 
 primary-expression:
-    identifier
+    IDENT
     | NUMLIT
     | CHARLIT
     | STRLIT
@@ -24,22 +35,24 @@ primary-expression:
 
 postfix-expression:
     primary-expression
-    | postfix-expression '[' expression ']'
-    | postfix-expression '(' argument-expression-list-opt ')'
-    | postfix-expression '.' identifier
-    | postfix-expression INDSEL identifier
+    /* | postfix-expression '[' expression ']' */
+    /* | postfix-expression '(' argument-expression-list-opt ')' */
+    /* | postfix-expression '.' IDENT */
+    | postfix-expression INDSEL IDENT
     | postfix-expression PLUSPLUS
     | postfix-expression MINUSMINUS
-    | '(' type-name ')' '{' initializer-list '}'
-    | '(' type-name ')' '{' initializer-list ',' '}'
+    /* | '(' type-name ')' '{' initializer-list '}' */
+    /* | '(' type-name ')' '{' initializer-list ',' '}' */
 
-argument-expression-list-opt:
+/* argument-expression-list-opt: */
     /* empty */
-    | argument-expression-list
+    /* | argument-expression-list */
 
+/*
 argument-expression-list:
     assignment-expression
     | argument-expression-list ',' assignment-expression
+*/
 
 unary-operator:
     '&'
@@ -54,12 +67,12 @@ unary-expression:
     | PLUSPLUS unary-expression
     | MINUSMINUS unary-expression
     | unary-operator cast-expression
-    | SIZEOF unary-expression
-    | SIZEOF '(' type-name ')'
+    /* | SIZEOF unary-expression */
+    /* | SIZEOF '(' type-name ')' */
 
 cast-expression:
     unary-expression
-    | '(' type-name ')' cast-expression
+    /* | '(' type-name ')' cast-expression */
 
 multiplicative-expression:
     cast-expression
