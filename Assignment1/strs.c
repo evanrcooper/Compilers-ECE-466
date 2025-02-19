@@ -1,3 +1,0 @@
-"test\ttest"
-'a'
-'\n'

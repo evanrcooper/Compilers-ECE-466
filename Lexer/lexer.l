@@ -13,8 +13,14 @@ typedef struct DYNAMIC_STRING {
     unsigned long long str_max_len;
 } D_STRING;
 
+typedef struct STATIC_STRING {
+    char *str_val;
+    unsigned long long str_len; /* including null terminal */
+} S_STRING;
+
 typedef union {
     D_STRING *d_str_val;
+    S_STRING s_str_val;
     char *str_val;
     long long int_val;
     long double real_val;
@@ -257,11 +263,11 @@ typedef union {
 }
 
 <str_lit>\\[xX][0-9A-Fa-f]{2} {
-
+    /* TODO */;
 }
 
 <str_lit>\\[0-7]{3} {
-    
+    /* TODO */;
 }
 
 <str_lit>\\[abefnrtv\\'"?0] {
@@ -335,14 +341,23 @@ typedef union {
     yylval.d_str_val->str_val[yylval.d_str_val->str_len] = '\0';
     char *temp_str = malloc(yylval.d_str_val->str_len + 1);
     (void) memcpy((void*) temp_str, (void*) yylval.d_str_val->str_val, yylval.d_str_val->str_len + 1);
+
+    S_STRING s_str = {0};
+    s_str.str_val = temp_str;
+    s_str.str_len = yylval.d_str_val->str_len + 1;
+
     free(yylval.d_str_val->str_val);
     free(yylval.d_str_val);
-    yylval.str_val = temp_str;
+
+    yylval.s_str_val = s_str;
     BEGIN(INITIAL);
     return STRINGLIT;
 }
 
-[_A-Za-z][_A-Za-z0-9]* {return IDENT; /* yytext contains ident_name */}
+[_A-Za-z][_A-Za-z0-9]* {
+    yylval.str_val = strdup(yytext);
+    return IDENT;
+}
 
 \s+ {}
 

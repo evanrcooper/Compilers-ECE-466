@@ -6,6 +6,8 @@
 #include <string.h>
 
 typedef struct ast_node_struct ast_node;
+typedef struct ast_dll_node_struct ast_dll_node;
+typedef struct ast_dll_struct ast_dll;
 struct ast_node_unop unop;
 struct ast_node_binop binop;
 struct ast_node_triop triop;
@@ -112,7 +114,20 @@ struct ast_node_charlit {
 
 struct ast_node_strlit {
     char *val;
+    unsigned long long len;
 };
+
+typedef struct ast_dll_struct {
+    ast_dll_node *head;
+    ast_dll_node *tail;
+    long long int count;
+} ast_dll;
+
+typedef struct ast_dll_node_struct {
+    ast_node *node_val;
+    ast_dll *prev;
+    ast_dll *next;
+} ast_dll_node;
 
 typedef struct ast_node_struct {
     enum ast_node_type node_type;

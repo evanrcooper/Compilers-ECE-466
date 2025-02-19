@@ -208,3 +208,13 @@ void print_ast_node(int depth, ast_node *node) {
             break;
     }
 }
+
+ast_dll dll_create() {
+    return (ast_dll) {0};
+}
+
+ast_dll* dll_append(ast_dll *dll, ast_dll_node *node) {
+    dll->count++;
+    dll->tail->next = node;
+    dll->tail = dll->tail->next;
+}
