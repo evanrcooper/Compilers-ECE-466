@@ -7,83 +7,140 @@ extern int yyerror(const char *s);
 
 %}
 
-%token IDENT NUMBER SEMICOLON PLUSPLUS MINUSMINUS INDSEL LTEQ GTEQ EQEQ NOTEQ LOGAND SHL SHR LOGOR TIMESEQ DIVEQ MODEQ PLUSEQ MINUSEQ SHLEQ SHREQ ANDEQ OREQ XOREQ POSTOP PREOP PAREN BRACKET
+%token 
 
 %%
 
-program: /* START */
-    program expr_stmt
-    | /* empty */
-    ;
+/* http://faculty.cooper.edu/hak/ece466/n1124.pdf */
 
-expr_stmt:
-    expr SEMICOLON
-    ;
+/* 6.5 EXPRESSIONS */
 
-expr:
-    NUMBER
-    | ident_stmt
+primary-expression:
+    identifier
+    | NUMLIT
+    | CHARLIT
+    | STRLIT
+    | '(' expression ')'
 
-    | expr '+' expr
-    | expr '-' expr
-    | expr '*' expr
-    | expr '/' expr
+postfix-expression:
+    primary-expression
+    | postfix-expression '[' expression ']'
+    | postfix-expression '(' argument-expression-list-opt ')'
+    | postfix-expression '.' identifier
+    | postfix-expression INDSEL identifier
+    | postfix-expression PLUSPLUS
+    | postfix-expression MINUSMINUS
+    | '(' type-name ')' '{' initializer-list '}'
+    | '(' type-name ')' '{' initializer-list ',' '}'
 
-    | expr '&' expr
-    | expr '|' expr
-    | expr '^' expr
+argument-expression-list-opt:
+    /* empty */
+    | argument-expression-list
 
-    | expr '%' expr
+argument-expression-list:
+    assignment-expression
+    | argument-expression-list ',' assignment-expression
 
-    | expr '>' expr
-    | expr '<' expr
+unary-operator:
+    '&'
+    | '*'
+    | '+'
+    | '-'
+    | '~'
+    | '!'
 
-    | '!' expr
-    | '~' expr
+unary-expression:
+    postfix-expression
+    | PLUSPLUS unary-expression
+    | MINUSMINUS unary-expression
+    | unary-operator cast-expression
+    | SIZEOF unary-expression
+    | SIZEOF '(' type-name ')'
 
-    | '(' expr ')' %prec PAREN
-    | '+' expr
-    | '-' expr
+cast-expression:
+    unary-expression
+    | '(' type-name ')' cast-expression
 
-    | expr LTEQ expr
-    | expr GTEQ expr
-    | expr EQEQ expr
-    | expr NOTEQ expr
-    | expr LOGAND expr
-    | expr LOGOR expr
-    | expr SHL expr
-    | expr SHR expr
-    | expr LOGOR expr
+multiplicative-expression:
+    cast-expression
+    | multiplicative-expression '*' cast-expression
+    | multiplicative-expression '/' cast-expression
+    | multiplicative-expression '%' cast-expression
 
-    | expr '=' expr
-    | ident_stmt TIMESEQ expr
-    | ident_stmt DIVEQ expr
-    | ident_stmt MODEQ expr
-    | ident_stmt PLUSEQ expr
-    | ident_stmt MINUSEQ expr
-    | ident_stmt SHLEQ expr
-    | ident_stmt SHREQ expr
-    | ident_stmt ANDEQ expr
-    | ident_stmt OREQ expr
-    | ident_stmt XOREQ expr
+additive-expression:
+    multiplicative-expression
+    | additive-expression '+' multiplicative-expression
+    | additive-expression '-' multiplicative-expression
 
-    | expr '?' expr ':' expr %prec '?'
+shift-expression:
+    additive-expression
+    | shift-expression SHL additive-expression
+    | shift-expression SHR additive-expression
 
-ident_stmt:
-    IDENT
-    | ident_stmt PLUSPLUS %prec POSTOP
-    | PLUSPLUS ident_stmt %prec PREOP
+relational-expression:
+    shift-expression
+    | relational-expression '<' shift-expression
+    | relational-expression '>' shift-expression
+    | relational-expression LEQ shift-expression
+    | relational-expression GEQ shift-expression
 
-    | ident_stmt MINUSMINUS %prec POSTOP
-    | MINUSMINUS ident_stmt %prec PREOP
+equality-expression:
+    relational-expression
+    | equality-expression EQEQ relational-expression
+    | equality-expression NEQ relational-expression
 
-    | ident_stmt INDSEL ident_stmt
-    | ident_stmt '.' ident_stmt
+bitand-expression: /* AND-expression */
+    equality-expression
+    | bitand-expression '&' equality-expression
 
-    | '*' ident_stmt
-    | '&' ident_stmt
-    | ident_stmt '[' expr ']' %prec BRACKET
-    | '(' ident_stmt ')' %prec PAREN
+bitxor-expression: /* exclusive-OR-expression */
+    bitand-expression
+    | bitxor-expression '^' bitand-expression
+
+bitor-expression: /* inclusive-OR-expression */
+    bitxor-expression
+    | bitor-expression '|' bitxor-expression
+
+logand-expression: /* logical-AND-expression */
+    bitor-expression
+    | logand-expression LOGAND bitor-expression
+
+logor-expression: /* logical-OR-expression */
+    logand-expression
+    | logor-expression LOGOR logand-expression
+
+conditional-expression:
+    logor-expression
+    | logor-expression '?' expression ':' conditional-expression
+
+assignment-operator:
+    '='
+    | TIMESEQ
+    | DIVEQ
+    | MODEQ
+    | PLUSEQ
+    | MINUSEQ
+    | SHLEQ
+    | SHREQ
+    | ANDEQ
+    | OREQ
+    | XOREQ
+
+assignment-expression:
+    conditional-expression
+    | unary-expression assignment-operator assignment-expression
+
+expression:
+    assignment-expression
+    | expression ',' assignment-expression
+
+/* 6.6 CONSTANT EXPRESSIONS */
+
+constant-expression:
+    conditional-expression
+
+/* 6.7 DECLARATIONS */
+
 
 %%
 

@@ -30,7 +30,27 @@ typedef union {
 
 %%
 
-";"             {return SEMICOLON;}
+";"             {return ';';}
+"-"             {return '-';}
+"&"             {return '&';}
+"|"             {return '|';}
+"("             {return '(';}
+")"             {return ')';}
+"["             {return '[';}
+"]"             {return ']';}
+"/"             {return '/';}
+"%"             {return '%';}
+"^"             {return '^';}
+"!"             {return '!';}
+"~"             {return '~';}
+"."             {return '.';}
+">"             {return '>';}
+"<"             {return '<';}
+","             {return ',';}
+":"             {return ':';}
+"*"             {return '*';}
+"{"             {return '{';}
+"}"             {return '}';}
 
 "->"            {return INDSEL;}
 "++"            {return PLUSPLUS;}
@@ -106,17 +126,12 @@ typedef union {
     }
 }
 
-[-+]?[0]+ { /* zero literal octal/decimal */
-    yylval.int_val = 0;
-    return NUMBERLIT;
-}
-
-[-+]?[1-9][0-9]* { /* decimal numbers */
+[1-9][0-9]* { /* decimal numbers */
     yylval.int_val = strtoll(yytext, NULL, 10);
     return NUMBERLIT;
 }
 
-[-+]?0[bB][01]+ { /* binary numbers */
+0[bB][01]+ { /* binary numbers */
     if (yytext[0] == '+') {
         yylval.int_val = (long long int) strtoll(yytext+3, NULL, 2);
     } else if (yytext[0] == '-') {
@@ -127,7 +142,7 @@ typedef union {
     return NUMBERLIT;
 }
 
-[-+]?0[xX][0-9A-Fa-f]+ { /* hex numbers */
+0[xX][0-9A-Fa-f]+ { /* hex numbers */
     if (yytext[0] == '+') {
         yylval.int_val = (long long int) strtoll(yytext+3, NULL, 16);
     } else if (yytext[0] == '-') {
@@ -138,7 +153,7 @@ typedef union {
     return NUMBERLIT;
 }
 
-[-+]?0[0-7]+ { /* octal numbers */
+0[0-7]+ { /* octal numbers */
     if (yytext[0] == '+') {
         yylval.int_val = (long long int) strtoll(yytext+2, NULL, 8);
     } else if (yytext[0] == '-') {
@@ -148,13 +163,13 @@ typedef union {
     }    return NUMBERLIT;
 }
 
-[-+]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?[fFlL]? { /* decimal floats and exponents */
+([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?[fFlL]? { /* decimal floats and exponents */
     /* https://stackoverflow.com/a/12643073 */
     yylval.real_val = (long double) strtold(yytext, NULL);
     return FLOATLIT;
 }
 
-[-+]?0[xX]([0-9A-Fa-f]+([.][0-9A-Fa-f]*)?|[.][0-9A-Fa-f]+)([pP][+-]?[0-9]+)?[fFlL]? { /* hex floats and exponents */
+0[xX]([0-9A-Fa-f]+([.][0-9A-Fa-f]*)?|[.][0-9A-Fa-f]+)([pP][+-]?[0-9]+)?[fFlL]? { /* hex floats and exponents */
     /* https://stackoverflow.com/a/12643073 */
     yylval.real_val = (long double) strtold(yytext, NULL);
     return FLOATLIT;
@@ -239,6 +254,14 @@ typedef union {
     yylval.d_str_val->str_len = 0;
     yylval.d_str_val->str_max_len = DEFAULT_D_STR_LEN;
     BEGIN(str_lit);
+}
+
+<str_lit>\\[xX][0-9A-Fa-f]{2} {
+
+}
+
+<str_lit>\\[0-7]{3} {
+    
 }
 
 <str_lit>\\[abefnrtv\\'"?0] {
