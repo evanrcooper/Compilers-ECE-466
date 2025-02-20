@@ -10,8 +10,6 @@ extern int yyerror(const char *s);
 
 %union {
     ast_node* node;
-    char char_val;
-    long long unsigned int token;
 }
 
 %token IDENT NUMLIT CHARLIT STRLIT FLOATLIT
@@ -24,7 +22,6 @@ extern int yyerror(const char *s);
 
 %type <node> primary-expression 
 %type <node> postfix-expression 
-%type <char_val> unary-operator
 %type <node> unary-expression
 %type <node> cast-expression
 %type <node> multiplicative-expression
@@ -38,7 +35,6 @@ extern int yyerror(const char *s);
 %type <node> logand-expression
 %type <node> logor-expression
 %type <node> conditional-expression
-%type <token> assignment-operator
 %type <node> assignment-expression
 %type <node> expression
 %type <node> constant-expression
@@ -109,19 +105,16 @@ argument-expression-list:
     | argument-expression-list ',' assignment-expression
 */
 
-unary-operator:
-    '&'
-    | '*'
-    | '+'
-    | '-'
-    | '~'
-    | '!'
-
 unary-expression:
     postfix-expression {$$ = $1;}
     | PLUSPLUS unary-expression {}
     | MINUSMINUS unary-expression {}
-    | unary-operator cast-expression {/* new ast node un op and set op to $-1 */}
+    | '&' cast-expression {}
+    | '*' cast-expression {}
+    | '+' cast-expression {}
+    | '-' cast-expression {}
+    | '~' cast-expression {}
+    | '!' cast-expression {}
     /* | SIZEOF unary-expression */
     /* | SIZEOF '(' type-name ')' */
 
@@ -181,22 +174,19 @@ conditional-expression:
     logor-expression {$$ = $1;}
     | logor-expression '?' expression ':' conditional-expression
 
-assignment-operator:
-    '=' {$$ = '=';}
-    | TIMESEQ {$$ = TIMESEQ;}
-    | DIVEQ {$$ = DIVEQ;}
-    | MODEQ {$$ = MODEQ;}
-    | PLUSEQ {$$ = PLUSEQ;}
-    | MINUSEQ {$$ = MINUSEQ;}
-    | SHLEQ {$$ = SHLEQ;}
-    | SHREQ {$$ = SHREQ;}
-    | ANDEQ {$$ = ANDEQ;}
-    | OREQ {$$ = OREQ;}
-    | XOREQ {$$ = XOREQ;}
-
 assignment-expression:
     conditional-expression {$$ = $1;}
-    | unary-expression assignment-operator assignment-expression
+    | unary-expression '=' assignment-expression
+    | unary-expression TIMESEQ assignment-expression
+    | unary-expression DIVEQ assignment-expression
+    | unary-expression MODEQ assignment-expression
+    | unary-expression PLUSEQ assignment-expression
+    | unary-expression MINUSEQ assignment-expression
+    | unary-expression SHLEQ assignment-expression
+    | unary-expression SHREQ assignment-expression
+    | unary-expression ANDEQ assignment-expression
+    | unary-expression OREQ assignment-expression
+    | unary-expression XOREQ assignment-expression
 
 expression:
     assignment-expression {$$ = $1;}
@@ -208,7 +198,6 @@ constant-expression:
     conditional-expression {$$ = $1;}
 
 /* 6.7 DECLARATIONS */
-
 
 %%
 
