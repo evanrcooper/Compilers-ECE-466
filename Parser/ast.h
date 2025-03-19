@@ -58,6 +58,8 @@ enum binop_type { // id1 op1 id2
     B_BIT_OREQ, // |=
     B_BIT_XOREQ, // ^=
     B_ASSIGN_LIST, // expr, expr
+    B_STRUCT_OFFSET, // a.b
+    B_INDSEL, // a->b
 };
 
 enum triop_type { // id1 op1 id2 op2 id3

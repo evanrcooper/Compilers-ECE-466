@@ -11,6 +11,8 @@
     int yyerror(const char *s);
 }
 
+%define parse.trace
+
 %union {
     char *str_val;
     long long int_val;
@@ -85,6 +87,7 @@
 %type <node> expression
 /* %type <node> constant-expression */
 %type <node> expression-stmt
+%type <node> ident-expr
 
 %%
 
@@ -95,25 +98,30 @@
 
 program:
     /* empty */
-    | expression-stmt
+    | expression-stmt program
 
-primary-expression:
+ident-expr:
     IDENT {
         ast_node *ident_node = calloc(1, sizeof(ast_node));
         ident_node->node_type = AST_IDENT;
         ident_node->val.ident.ident_name = strdup(yylval.str_val);
         $$ = ident_node;
     }
+
+primary-expression:
+    ident-expr {$$ = $1;}
     | NUMLIT {
         ast_node *numlit_node = calloc(1, sizeof(ast_node));
         numlit_node->node_type = AST_NUMLIT;
         numlit_node->val.numlit.val.int_val = yylval.int_val;
+        numlit_node->val.numlit.type = N_LLI;
         $$ = numlit_node;
     }
     | FLOATLIT {
         ast_node *flit_node = calloc(1, sizeof(ast_node));
         flit_node->node_type = AST_NUMLIT;
         flit_node->val.numlit.val.real_val = yylval.real_val;
+        flit_node->val.numlit.type = N_LLF;
         $$ = flit_node;
     }
     | CHARLIT {
@@ -133,10 +141,12 @@ primary-expression:
 
 postfix-expression:
     primary-expression {$$ = $1;}
-    /* | postfix-expression '[' expression ']' {} */
-    /* | postfix-expression '(' argument-expression-list-opt ')' */
-    /* | postfix-expression '.' IDENT */
-    /* | postfix-expression INDSEL IDENT */
+    | postfix-expression '[' expression ']' {
+        $$ = create_unop_node(U_DEREF, create_binop_node(B_PLUS, $1, $3));
+    }
+    /* | postfix-expression '(' argument-expression-list-opt ')' {} */
+    | postfix-expression '.' ident-expr {create_binop_node(B_STRUCT_OFFSET, $1, $3);}
+    | postfix-expression INDSEL ident-expr {create_binop_node(B_INDSEL, $1, $3);}
     | postfix-expression PLUSPLUS {$$ = create_unop_node(U_POST_PLUSPLUS, $1);}
     | postfix-expression MINUSMINUS {$$ = create_unop_node(U_POST_MINUSMINUS, $1);}
     /* | '(' type-name ')' '{' initializer-list '}' */
@@ -240,7 +250,6 @@ expression:
     | expression ',' assignment-expression {$$ = create_binop_node(B_ASSIGN_LIST, $1, $3);}
 
 /* 6.6 CONSTANT EXPRESSIONS */
-
 /* constant-expression:
     conditional-expression {$$ = $1;} */
 
@@ -253,6 +262,7 @@ expression-stmt:
 %%
 
 int main() {
+    yydebug = 0;
     yyparse();
     return 0;
 }

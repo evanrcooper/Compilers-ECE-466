@@ -4,6 +4,12 @@ char *unop_to_char(enum unop_type type) {
     char *ret_str;
     char *msg;
     switch (type) {
+        case U_ADDRESSOF:
+            msg = "!";
+            break;
+        case U_DEREF:
+            msg = "*";
+            break;
         case U_NOT:
             msg = "!";
             break;
@@ -127,6 +133,15 @@ char *binop_to_str(enum binop_type type) {
             break;
         case B_BIT_XOREQ:
             msg = "^=";
+            break;
+        case B_STRUCT_OFFSET:
+            msg = ".";
+            break;
+        case B_INDSEL:
+            msg = "->";
+            break;
+        case B_ASSIGN_LIST:
+            msg = ", (ASSIGN LIST)";
             break;
         default:
             msg = "N/A";
