@@ -1,24 +1,70 @@
 %{
-#include <stdio.h>
-#include <stdlib.h>
-#include "ast.h"
-
-extern int yylex();
-extern int yyerror(const char *s);
-
+    #include "parser.tab.h"
+    int yylex(void);
+    extern FILE *yyin;
 %}
 
+%code requires {
+    #include "ast.h"
+    #include <stdio.h>
+    #include <stdlib.h>
+    int yyerror(const char *s);
+}
+
 %union {
+    char *str_val;
+    long long int_val;
+    long double real_val;
+    char char_val;
+    D_STRING d_str_val;
     ast_node* node;
 }
 
 %token IDENT NUMLIT CHARLIT STRLIT FLOATLIT
 %token PLUSPLUS MINUSMINUS
-/* %token INDSEL */
+%token INDSEL
 %token SHL SHR
 %token GEQ LEQ EQEQ NEQ
 %token LOGAND LOGOR
 %token TIMESEQ PLUSEQ XOREQ MINUSEQ DIVEQ MODEQ SHLEQ SHREQ ANDEQ OREQ
+
+%token ELLIPSIS
+%token AUTO
+%token BREAK
+%token CASE
+%token CHAR
+%token CONST
+%token CONTINUE
+%token DEFAULT
+%token DO
+%token DOUBLE
+%token ELSE
+%token ENUM
+%token EXTERN
+%token FLOAT
+%token FOR
+%token GOTO
+%token IF
+%token INLINE
+%token INT
+%token LONG
+%token REGISTER
+%token RESTRICT
+%token RETURN
+%token SHORT
+%token SIGNED
+%token SIZEOF
+%token STATIC
+%token STRUCT
+%token SWITCH
+%token TYPEDEF
+%token UNION
+%token UNSIGNED
+%token VOID
+%token VOLATILE
+%token WHILE
+
+%token _BOOL _COMPLEX _IMAGINARY
 
 %type <node> primary-expression 
 %type <node> postfix-expression 
@@ -49,7 +95,7 @@ extern int yyerror(const char *s);
 
 program:
     /* empty */
-    | expression ';' program
+    | expression-stmt
 
 primary-expression:
     IDENT {
@@ -79,8 +125,8 @@ primary-expression:
     | STRLIT {
         ast_node *strlit_node = calloc(1, sizeof(ast_node));
         strlit_node->node_type = AST_NUMLIT;
-        strlit_node->val.strlit.val = yylval.s_str_val.str_val;
-        strlit_node->val.strlit.len = yylval.s_str_val.str_len;
+        strlit_node->val.strlit.val = yylval.d_str_val.str_val;
+        strlit_node->val.strlit.len = yylval.d_str_val.str_len;
         $$ = strlit_node;
     }
     | '(' expression ')' {$$ = $2;}

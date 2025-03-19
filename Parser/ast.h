@@ -6,13 +6,13 @@
 #include <string.h>
 
 typedef struct ast_node_struct ast_node;
-struct ast_node_unop unop;
-struct ast_node_binop binop;
-struct ast_node_triop triop;
-struct ast_node_numlit numlit;
-struct ast_node_ident ident;
-struct ast_node_charlit charlit;
-struct ast_node_strlit strlit;
+struct ast_node_unop;
+struct ast_node_binop;
+struct ast_node_triop;
+struct ast_node_numlit;
+struct ast_node_ident;
+struct ast_node_charlit;
+struct ast_node_strlit;
 
 enum unop_type { // op1 id1
     U_NOT, // !
@@ -144,5 +144,11 @@ void free_ast_tree(ast_node *root);
 ast_node* create_unop_node(enum unop_type op, ast_node *center);
 ast_node* create_binop_node(enum binop_type op, ast_node *left, ast_node *right);
 ast_node* create_triop_node(enum binop_type op, ast_node *left, ast_node *center, ast_node *right);
+
+typedef struct DYNAMIC_STRING {
+    char *str_val;
+    unsigned long long str_len;
+    unsigned long long str_max_len;
+} D_STRING;
 
 #endif // AST_H

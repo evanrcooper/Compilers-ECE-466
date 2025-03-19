@@ -1,33 +1,14 @@
 %{
 #include <stdio.h>
-#include "tokens.h"
+// #include "tokens.h"
+#include "../Parser/parser.tab.h"
 
 /* extern */ int line_number = 1;
 /* extern */ char *filename;
 
 #define DEFAULT_D_STR_LEN 32 /* >= 2 */
 
-typedef struct DYNAMIC_STRING {
-    char *str_val;
-    unsigned long long str_len;
-    unsigned long long str_max_len;
-} D_STRING;
-
-typedef struct STATIC_STRING {
-    char *str_val;
-    unsigned long long str_len; /* including null terminal */
-} S_STRING;
-
-typedef union {
-    D_STRING *d_str_val;
-    S_STRING s_str_val;
-    char *str_val;
-    long long int_val;
-    long double real_val;
-    char char_val;
-} YYSTYPE;
-
-/* extern */ YYSTYPE yylval;
+// YYSTYPE yylval;
 
 %}
 
@@ -63,10 +44,10 @@ typedef union {
 "--"            {return MINUSMINUS;}
 "<<"            {return SHL;}
 ">>"            {return SHR;}
-"<="            {return LTEQ;}
-">="            {return GTEQ;}
+"<="            {return LEQ;}
+">="            {return GEQ;}
 "=="            {return EQEQ;}
-"!="            {return NOTEQ;}
+"!="            {return NEQ;}
 "&&"            {return LOGAND;}
 "||"            {return LOGOR;}
 "..."           {return ELLIPSIS;}
@@ -121,8 +102,7 @@ typedef union {
 "_imaginary"    {return _IMAGINARY;}
 
 \n {
-    line_number++; 
-    return NEWLINE;
+    line_number++;
 } /* catch newline and add line to line number */
 
 #" "*[0-9]+" "*\".+\"" "*[0-9 ]+ { /* match preprocesser lines '# 41 main.c 1' and catch new filename and new line number */
@@ -134,7 +114,7 @@ typedef union {
 
 [1-9][0-9]* { /* decimal numbers */
     yylval.int_val = strtoll(yytext, NULL, 10);
-    return NUMBERLIT;
+    return NUMLIT;
 }
 
 0[bB][01]+ { /* binary numbers */
@@ -145,7 +125,7 @@ typedef union {
     } else {
         yylval.int_val = (long long int) strtoll(yytext+2, NULL, 2);
     }
-    return NUMBERLIT;
+    return NUMLIT;
 }
 
 0[xX][0-9A-Fa-f]+ { /* hex numbers */
@@ -156,7 +136,7 @@ typedef union {
     } else {
         yylval.int_val = (long long int) strtoll(yytext+2, NULL, 16);
     }
-    return NUMBERLIT;
+    return NUMLIT;
 }
 
 0[0-7]+ { /* octal numbers */
@@ -166,7 +146,7 @@ typedef union {
         yylval.int_val = -((long long int) strtoll(yytext+2, NULL, 8));
     } else {
         yylval.int_val = (long long int) strtoll(yytext+1, NULL, 8);
-    }    return NUMBERLIT;
+    }    return NUMLIT;
 }
 
 ([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?[fFlL]? { /* decimal floats and exponents */
@@ -255,10 +235,9 @@ typedef union {
 }
 
 ["] {
-    yylval.d_str_val = (D_STRING*) calloc(1, sizeof(D_STRING));
-    yylval.d_str_val->str_val = (char*) calloc(DEFAULT_D_STR_LEN, sizeof(char));
-    yylval.d_str_val->str_len = 0;
-    yylval.d_str_val->str_max_len = DEFAULT_D_STR_LEN;
+    yylval.d_str_val.str_val = (char*) calloc(DEFAULT_D_STR_LEN, sizeof(char));
+    yylval.d_str_val.str_len = 0;
+    yylval.d_str_val.str_max_len = DEFAULT_D_STR_LEN;
     BEGIN(str_lit);
 }
 
@@ -271,87 +250,78 @@ typedef union {
 }
 
 <str_lit>\\[abefnrtv\\'"?0] {
-    if (yylval.d_str_val->str_len + 2 > yylval.d_str_val->str_max_len) {
-        yylval.d_str_val->str_val = realloc(yylval.d_str_val->str_val, yylval.d_str_val->str_max_len * 2);
-        if (yylval.d_str_val->str_val == NULL) {
+    if (yylval.d_str_val.str_len + 2 > yylval.d_str_val.str_max_len) {
+        yylval.d_str_val.str_val = realloc(yylval.d_str_val.str_val, yylval.d_str_val.str_max_len * 2);
+        if (yylval.d_str_val.str_val == NULL) {
             REJECT
         }
-        yylval.d_str_val->str_max_len *= 2;
+        yylval.d_str_val.str_max_len *= 2;
     }
     switch (yytext[1]) {
     case 'a':
-        yylval.d_str_val->str_val[yylval.d_str_val->str_len] = '\a';
+        yylval.d_str_val.str_val[yylval.d_str_val.str_len] = '\a';
         break;
     case 'b':
-        yylval.d_str_val->str_val[yylval.d_str_val->str_len] = '\b';
+        yylval.d_str_val.str_val[yylval.d_str_val.str_len] = '\b';
         break;
     case 'e':
-        yylval.d_str_val->str_val[yylval.d_str_val->str_len] = '\033' /* \e */;
+        yylval.d_str_val.str_val[yylval.d_str_val.str_len] = '\033' /* \e */;
         break;
     case 'f':
-        yylval.d_str_val->str_val[yylval.d_str_val->str_len] = '\f';
+        yylval.d_str_val.str_val[yylval.d_str_val.str_len] = '\f';
         break;
     case 'n':
-        yylval.d_str_val->str_val[yylval.d_str_val->str_len] = '\n';
+        yylval.d_str_val.str_val[yylval.d_str_val.str_len] = '\n';
         break;
     case 'r':
-        yylval.d_str_val->str_val[yylval.d_str_val->str_len] = '\r';
+        yylval.d_str_val.str_val[yylval.d_str_val.str_len] = '\r';
         break;
     case 't':
-        yylval.d_str_val->str_val[yylval.d_str_val->str_len] = '\t';
+        yylval.d_str_val.str_val[yylval.d_str_val.str_len] = '\t';
         break;
     case 'v':
-        yylval.d_str_val->str_val[yylval.d_str_val->str_len] = '\v';
+        yylval.d_str_val.str_val[yylval.d_str_val.str_len] = '\v';
         break;
     case '\\':
-        yylval.d_str_val->str_val[yylval.d_str_val->str_len] = '\\';
+        yylval.d_str_val.str_val[yylval.d_str_val.str_len] = '\\';
         break;
     case '\'':
-        yylval.d_str_val->str_val[yylval.d_str_val->str_len] = '\'';
+        yylval.d_str_val.str_val[yylval.d_str_val.str_len] = '\'';
         break;
     case '\"':
-        yylval.d_str_val->str_val[yylval.d_str_val->str_len] = '\"';
+        yylval.d_str_val.str_val[yylval.d_str_val.str_len] = '\"';
         break;
     case '\?':
-        yylval.d_str_val->str_val[yylval.d_str_val->str_len] = '\?';
+        yylval.d_str_val.str_val[yylval.d_str_val.str_len] = '\?';
         break;
     case '0':
-        yylval.d_str_val->str_val[yylval.d_str_val->str_len] = '\0';
+        yylval.d_str_val.str_val[yylval.d_str_val.str_len] = '\0';
         break;
     default:
         REJECT
         break;
     }
-    yylval.d_str_val->str_len += 1;
+    yylval.d_str_val.str_len += 1;
 }
 
 <str_lit>[ !~#-\[\]-~] { /* match any printable character other than backslash and double quote */
-    if (yylval.d_str_val->str_len + 2 > yylval.d_str_val->str_max_len) {
-        yylval.d_str_val->str_val = realloc(yylval.d_str_val->str_val, yylval.d_str_val->str_max_len * 2);
-        if (yylval.d_str_val->str_val == NULL) {
+    if (yylval.d_str_val.str_len + 2 > yylval.d_str_val.str_max_len) {
+        yylval.d_str_val.str_val = realloc(yylval.d_str_val.str_val, yylval.d_str_val.str_max_len * 2);
+        if (yylval.d_str_val.str_val == NULL) {
             REJECT
         }
-        yylval.d_str_val->str_max_len *= 2;
+        yylval.d_str_val.str_max_len *= 2;
     }
-    yylval.d_str_val->str_val[yylval.d_str_val->str_len] = yytext[0];
-    yylval.d_str_val->str_len += 1;
+    yylval.d_str_val.str_val[yylval.d_str_val.str_len] = yytext[0];
+    yylval.d_str_val.str_len += 1;
 }
 
 <str_lit>["] {
-    yylval.d_str_val->str_val[yylval.d_str_val->str_len] = '\0';
-    char *temp_str = malloc(yylval.d_str_val->str_len + 1);
-    (void) memcpy((void*) temp_str, (void*) yylval.d_str_val->str_val, yylval.d_str_val->str_len + 1);
-
-    S_STRING s_str = {0};
-    s_str.str_val = temp_str;
-    s_str.str_len = yylval.d_str_val->str_len + 1;
-
-    free(yylval.d_str_val->str_val);
-    free(yylval.d_str_val);
-
-    yylval.s_str_val = s_str;
+    yylval.d_str_val.str_val = realloc(yylval.d_str_val.str_val, yylval.d_str_val.str_len + 1);
+    yylval.d_str_val.str_val[yylval.d_str_val.str_len] = '\0';
+    yylval.d_str_val.str_len += 1;
     BEGIN(INITIAL);
-    return STRINGLIT;
+    return STRLIT;
 }
 
 [_A-Za-z][_A-Za-z0-9]* {
@@ -365,19 +335,17 @@ typedef union {
 
 %%
 
-int main(int argc, char *argv[]) {
+/* int main(int argc, char *argv[]) {
     int tok_id = yylex();
 
     do {
-        if (tok_id == NEWLINE) {
-            printf("NEWLINE\n");
-		} else if (tok_id == NUMBERLIT) {
+        if (tok_id == NUMLIT) {
 			printf("TOKID: %d, LINE_NUM: %d, NUMLIT: %lld, TOKEN: %s\n", tok_id, line_number, yylval.int_val, yytext);
 		} else if (tok_id == FLOATLIT) {
 			printf("TOKID: %d, LINE_NUM: %d, FLIT: %Lf, TOKEN: %s\n", tok_id, line_number, yylval.real_val, yytext);
 		} else if (tok_id == CHARLIT) {
             printf("TOKID: %d, LINE_NUM: %d, CHAR: \'%c\'\n", tok_id, line_number, yylval.char_val);
-        } else if (tok_id == STRINGLIT) {
+        } else if (tok_id == STRLIT) {
             printf("TOKID: %d, LINE_NUM: %d, STRLIT: \"%s\"\n", tok_id, line_number, yylval.str_val);
         } else {
 			printf("TOKID: %d, LINE_NUM: %d, TOKEN: %s\n", tok_id, line_number, yytext);
@@ -385,6 +353,6 @@ int main(int argc, char *argv[]) {
     } while (tok_id = yylex());
     
     return 0;
-}
+} */
 
 int yywrap(){return(1);}
