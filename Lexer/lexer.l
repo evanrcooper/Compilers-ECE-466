@@ -18,6 +18,9 @@
 %%
 
 ";"             {return ';';}
+"+"             {return '+';}
+"-"             {return '-';}
+"="             {return '=';}
 "-"             {return '-';}
 "&"             {return '&';}
 "|"             {return '|';}
@@ -34,7 +37,9 @@
 ">"             {return '>';}
 "<"             {return '<';}
 ","             {return ',';}
+"."             {return '.';}
 ":"             {return ':';}
+"?"             {return '?';}
 "*"             {return '*';}
 "{"             {return '{';}
 "}"             {return '}';}
@@ -118,35 +123,18 @@
 }
 
 0[bB][01]+ { /* binary numbers */
-    if (yytext[0] == '+') {
-        yylval.int_val = (long long int) strtoll(yytext+3, NULL, 2);
-    } else if (yytext[0] == '-') {
-        yylval.int_val = -((long long int) strtoll(yytext+3, NULL, 2));
-    } else {
-        yylval.int_val = (long long int) strtoll(yytext+2, NULL, 2);
-    }
+    yylval.int_val = (long long int) strtoll(yytext+2, NULL, 2);
     return NUMLIT;
 }
 
 0[xX][0-9A-Fa-f]+ { /* hex numbers */
-    if (yytext[0] == '+') {
-        yylval.int_val = (long long int) strtoll(yytext+3, NULL, 16);
-    } else if (yytext[0] == '-') {
-        yylval.int_val = -((long long int) strtoll(yytext+3, NULL, 16));
-    } else {
-        yylval.int_val = (long long int) strtoll(yytext+2, NULL, 16);
-    }
+    yylval.int_val = (long long int) strtoll(yytext+2, NULL, 16);
     return NUMLIT;
 }
 
 0[0-7]+ { /* octal numbers */
-    if (yytext[0] == '+') {
-        yylval.int_val = (long long int) strtoll(yytext+2, NULL, 8);
-    } else if (yytext[0] == '-') {
-        yylval.int_val = -((long long int) strtoll(yytext+2, NULL, 8));
-    } else {
-        yylval.int_val = (long long int) strtoll(yytext+1, NULL, 8);
-    }    return NUMLIT;
+    yylval.int_val = (long long int) strtoll(yytext+1, NULL, 8);
+    return NUMLIT;
 }
 
 ([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?[fFlL]? { /* decimal floats and exponents */

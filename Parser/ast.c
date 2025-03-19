@@ -238,7 +238,7 @@ void print_ast_node(int depth, ast_node *node) {
             print_ast_node(depth + 1, node->val.binop.right);
             break;
         case AST_TRIOP:
-            op = unop_to_char(node->val.triop.op);
+            op = triop_to_char(node->val.triop.op);
             printf("TRIOP: %s\n", op);
             free(op);
             print_ast_node(depth + 1, node->val.triop.left);

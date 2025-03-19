@@ -141,12 +141,10 @@ primary-expression:
 
 postfix-expression:
     primary-expression {$$ = $1;}
-    | postfix-expression '[' expression ']' {
-        $$ = create_unop_node(U_DEREF, create_binop_node(B_PLUS, $1, $3));
-    }
+    | postfix-expression '[' expression ']' {$$ = create_unop_node(U_DEREF, create_binop_node(B_PLUS, $1, $3));}
     /* | postfix-expression '(' argument-expression-list-opt ')' {} */
-    | postfix-expression '.' ident-expr {create_binop_node(B_STRUCT_OFFSET, $1, $3);}
-    | postfix-expression INDSEL ident-expr {create_binop_node(B_INDSEL, $1, $3);}
+    | postfix-expression '.' ident-expr {$$ = create_binop_node(B_STRUCT_OFFSET, $1, $3);}
+    | postfix-expression INDSEL ident-expr {$$ = create_binop_node(B_INDSEL, $1, $3);}
     | postfix-expression PLUSPLUS {$$ = create_unop_node(U_POST_PLUSPLUS, $1);}
     | postfix-expression MINUSMINUS {$$ = create_unop_node(U_POST_MINUSMINUS, $1);}
     /* | '(' type-name ')' '{' initializer-list '}' */
@@ -256,7 +254,8 @@ expression:
 expression-stmt:
     expression ';' {
         print_ast_tree($1);
-        $$ = $1;
+        free_ast_tree($1);
+        $$ = NULL;
     }
 
 %%
@@ -271,4 +270,3 @@ int yyerror(const char *s) {
     fprintf(stderr, "Error: %s\n", s);
     return 0;
 }
-
