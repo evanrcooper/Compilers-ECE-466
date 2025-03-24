@@ -338,19 +338,3 @@
 } */
 
 int yywrap(){return(1);}
-
-void print_escaped_char(unsigned char c) {
-    if (isprint(c)) {
-        putchar(c);
-    } else {
-        printf("\\x%02X", c);
-    }
-}
-
-void print_escaped_str(const char *input, unsigned long long length) {
-    if (!input) return;
-
-    for (unsigned long long i = 0; i < length; i++) {
-        print_escaped_char((unsigned char)input[i]);
-    }
-}
