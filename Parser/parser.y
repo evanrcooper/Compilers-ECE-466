@@ -132,7 +132,7 @@ primary-expression:
     }
     | STRLIT {
         ast_node *strlit_node = calloc(1, sizeof(ast_node));
-        strlit_node->node_type = AST_NUMLIT;
+        strlit_node->node_type = AST_STRLIT;
         strlit_node->val.strlit.val = yylval.d_str_val.str_val;
         strlit_node->val.strlit.len = yylval.d_str_val.str_len;
         $$ = strlit_node;

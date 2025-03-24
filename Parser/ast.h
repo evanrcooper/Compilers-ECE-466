@@ -150,7 +150,12 @@ ast_node* create_triop_node(enum binop_type op, ast_node *left, ast_node *center
 typedef struct DYNAMIC_STRING {
     char *str_val;
     unsigned long long str_len;
-    unsigned long long str_max_len;
 } D_STRING;
+
+int is_printable(char c);
+
+void print_string(char *str, int len);
+
+void print_char(char c);
 
 #endif // AST_H

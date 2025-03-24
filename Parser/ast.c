@@ -216,10 +216,12 @@ void print_ast_node(int depth, ast_node *node) {
             }
             break;
         case AST_CHARLIT:
-            printf("CHAR: %c\n", node->val.charlit.val);
+            printf("CHAR: ");
+            print_char(node->val.charlit.val);
             break;
         case AST_STRLIT:
-            printf("STRING: %s\n", node->val.strlit.val);
+            printf("STRING: ");
+            print_string(node->val.strlit.val, node->val.strlit.len);
             break;
         case AST_IDENT:
             printf("IDENT: %s\n", node->val.ident.ident_name);
@@ -276,4 +278,30 @@ ast_node* create_triop_node(enum binop_type op, ast_node *left, ast_node *center
     triop_node->val.triop.center = center;
     triop_node->val.triop.right = right;
     return triop_node;
+}
+
+int is_printable(char c) {
+    return (c <= '~') && (c >= ' ');
+}
+
+void print_string(char *str, int len) {
+    printf("\"");
+    for (int i = 0; i < len; i++) {
+        if (is_printable(str[i])) {
+            printf("%c", str[i]);
+        } else {
+            printf("\\x%02x", str[i]);
+        }
+    }
+    printf("\"\n");
+}
+
+void print_char(char c) {
+    printf("\'");
+    if (is_printable(c)) {
+        printf("%c", c);
+    } else {
+        printf("\\x%02x", c);
+    }
+    printf("\'\n");
 }

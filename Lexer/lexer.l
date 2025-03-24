@@ -223,28 +223,29 @@
 }
 
 ["] {
-    yylval.d_str_val.str_val = (char*) calloc(DEFAULT_D_STR_LEN, sizeof(char));
+    yylval.d_str_val.str_val = (char*) calloc(1, sizeof(char));
     yylval.d_str_val.str_len = 0;
-    yylval.d_str_val.str_max_len = DEFAULT_D_STR_LEN;
     BEGIN(str_lit);
 }
 
 <str_lit>\\[xX][0-9A-Fa-f]{2} {
-    /* TODO */;
+    yylval.d_str_val.str_val = realloc(yylval.d_str_val.str_val, yylval.d_str_val.str_len + 1);
+    int val;
+    sscanf(yytext + 2, "%2x", &val);
+    yylval.d_str_val.str_val[yylval.d_str_val.str_len] = (char)val;
+    yylval.d_str_val.str_len += 1;
 }
 
 <str_lit>\\[0-7]{3} {
-    /* TODO */;
+    yylval.d_str_val.str_val = realloc(yylval.d_str_val.str_val, yylval.d_str_val.str_len + 1);
+    int val;
+    sscanf(yytext + 1, "%3o", &val);
+    yylval.d_str_val.str_val[yylval.d_str_val.str_len] = (char)val;
+    yylval.d_str_val.str_len += 1;
 }
 
 <str_lit>\\[abefnrtv\\'"?0] {
-    if (yylval.d_str_val.str_len + 2 > yylval.d_str_val.str_max_len) {
-        yylval.d_str_val.str_val = realloc(yylval.d_str_val.str_val, yylval.d_str_val.str_max_len * 2);
-        if (yylval.d_str_val.str_val == NULL) {
-            REJECT
-        }
-        yylval.d_str_val.str_max_len *= 2;
-    }
+    yylval.d_str_val.str_val = realloc(yylval.d_str_val.str_val, yylval.d_str_val.str_len + 1);
     switch (yytext[1]) {
     case 'a':
         yylval.d_str_val.str_val[yylval.d_str_val.str_len] = '\a';
@@ -293,19 +294,12 @@
 }
 
 <str_lit>[ !~#-\[\]-~] { /* match any printable character other than backslash and double quote */
-    if (yylval.d_str_val.str_len + 2 > yylval.d_str_val.str_max_len) {
-        yylval.d_str_val.str_val = realloc(yylval.d_str_val.str_val, yylval.d_str_val.str_max_len * 2);
-        if (yylval.d_str_val.str_val == NULL) {
-            REJECT
-        }
-        yylval.d_str_val.str_max_len *= 2;
-    }
+    yylval.d_str_val.str_val = realloc(yylval.d_str_val.str_val, yylval.d_str_val.str_len + 1);
     yylval.d_str_val.str_val[yylval.d_str_val.str_len] = yytext[0];
     yylval.d_str_val.str_len += 1;
 }
 
 <str_lit>["] {
-    yylval.d_str_val.str_val = realloc(yylval.d_str_val.str_val, yylval.d_str_val.str_len + 1);
     yylval.d_str_val.str_val[yylval.d_str_val.str_len] = '\0';
     yylval.d_str_val.str_len += 1;
     BEGIN(INITIAL);
