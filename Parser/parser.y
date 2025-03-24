@@ -254,7 +254,7 @@ expression:
 expression-stmt:
     expression ';' {
         print_ast_tree($1);
-        free_ast_tree($1);
+        // free_ast_tree($1);
         $$ = NULL;
     }
 

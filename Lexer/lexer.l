@@ -317,9 +317,9 @@
     return IDENT;
 }
 
-\s+ {}
+[ \t\n]+ {}
 
-. {REJECT;}
+. {printf("INVALID TOKEN: %s\n", yytext);}
 
 %%
 
