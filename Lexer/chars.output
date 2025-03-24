@@ -1,24 +1,0 @@
-make
-make[1]: Entering directory '/home/flof/Compilers-ECE-466/Lexer'
-make[1]: 'a.out' is up to date.
-make[1]: Leaving directory '/home/flof/Compilers-ECE-466/Lexer'
-./a.out < ../Assignment1/chars.c
-TOKID: 260, LINE_NUM: 1, STRLIT: ""
-NEWLINE
-TOKID: 260, LINE_NUM: 2, STRLIT: ""
-NEWLINE
-TOKID: 259, LINE_NUM: 3, CHAR: '''
-NEWLINE
-TOKID: 260, LINE_NUM: 4, STRLIT: "\"\'"
-NEWLINE
-\\TOKID: 260, LINE_NUM: 5, STRLIT: ""
-NEWLINE
-abTOKID: 259, LINE_NUM: 6, CHAR: 'c'
-NEWLINE
-\TOKID: 260, LINE_NUM: 7, STRLIT: "ABxabcdefg"
-NEWLINE
-\\\\TOKID: 260, LINE_NUM: 8, STRLIT: "x57x4Fx52x44?"
-NEWLINE
-TOKID: 260, LINE_NUM: 9, STRLIT: "
-	"
-NEWLINE

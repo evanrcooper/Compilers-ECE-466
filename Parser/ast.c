@@ -1,205 +1,37 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-typedef struct ast_node_struct ast_node;
-struct ast_node_unop unop;
-struct ast_node_binop binop;
-struct ast_node_triop triop;
-struct ast_node_numlit numlit;
-struct ast_node_ident ident;
-struct ast_node_charlit charlit;
-struct ast_node_strlit strlit;
-
-enum unop_type { // op1 id1
-    NOT, // !
-    BIT_NOT, // ~
-    POS, // +
-    NEG, // -
-    PRE_PLUSPLUS, // ++x
-    PRE_MINUSMINUS, // --x
-    POST_PLUSPLUS, // x++
-    POST_MINUSMINUS, // x--
-};
-
-enum binop_type { // id1 op1 id2
-    PLUS, // +
-    MINUS, // -
-    TIMES, // *
-    DIVIDE, // /
-    BIT_AND, // &
-    BIT_OR, // |
-    BIT_XOR, // ^
-    MOD, // %
-    LT, // <
-    GT, // >
-    LTEQ, // <=
-    GTEQ, // >=
-    EQEQ, // ==
-    NOTEQ, // !=
-    LOG_AND, // &&
-    LOG_OR, // ||
-    SHL, // <<
-    SHR, // >>
-    EQ, // =
-    TIMESEQ, // *=
-    DIVEQ, // /=
-    MODEQ, // %=
-    PLUSEQ, // +=
-    MINUSEQ, // -=
-    SHLEQ, // <<=
-    SHREQ, // >>=
-    BIT_ANDEQ, // &=
-    BIT_OREQ, // |=
-    BIT_XOREQ, // ^=
-};
-
-enum triop_type { // id1 op1 id2 op2 id3
-    TERNARY, // ? :
-};
-
-enum numlit_type {
-    LLI, // long long int
-    LLF, // long double
-};
-
-enum ast_node_type {
-    NUMLIT,
-    CHARLIT,
-    STRLIT,
-    IDENT,
-    UNOP,
-    BINOP,
-    TRIOP,
-};
-
-struct ast_node_unop {
-    enum unop_type op;
-    ast_node *center;
-};
-
-struct ast_node_binop {
-    enum binop_type op;
-    ast_node *left;
-    ast_node *right;
-};
-
-struct ast_node_triop {
-    enum triop_type op;
-    ast_node *left;
-    ast_node *center;
-    ast_node *right;
-};
-
-struct ast_node_numlit {
-    enum numlit_type type;
-    union numlit_val {
-        long long int_val;
-        long double real_val;
-    } val;
-};
-
-struct ast_node_ident {
-    char *ident_name;
-};
-
-struct ast_node_charlit {
-    char val;
-};
-
-struct ast_node_strlit {
-    char *val;
-};
-
-typedef struct ast_node_struct {
-    enum ast_node_type node_type;
-    union ast_node_val {
-        struct ast_node_unop unop;
-        struct ast_node_binop binop;
-        struct ast_node_triop triop;
-        struct ast_node_numlit numlit;
-        struct ast_node_ident ident;
-        struct ast_node_charlit charlit;
-        struct ast_node_strlit strlit;
-        /* ... */
-    } val;
-} ast_node;
-
-char *unop_to_char(enum unop_type type);
-char *binop_to_str(enum binop_type type);
-char *triop_to_char(enum triop_type type);
-void print_ast_node(int depth, ast_node *node);
-
-int main() {
-    
-    ast_node p;
-    ast_node l1;
-    ast_node l2;
-    ast_node r2;
-    ast_node r1;
-    ast_node c1;
-
-    char *l1_name = "ident_name";
-
-    p.node_type = BINOP;
-    p.val.binop.op = TIMES;
-    p.val.binop.left = &l1;
-    p.val.binop.right = &r1;
-
-    l1.node_type = IDENT;
-    l1.val.ident.ident_name = l1_name;
-
-    r1.node_type = BINOP;
-    r1.val.binop.op = LOG_AND;
-    r1.val.binop.left = &l2;
-    r1.val.binop.right = &r2;
-
-    l1.node_type = IDENT;
-    l1.val.ident.ident_name = l1_name;
-
-    l2.node_type = UNOP;
-    l2.val.unop.op = NEG;
-    l2.val.unop.center = &c1;
-
-    c1.node_type = NUMLIT;
-    c1.val.numlit.type = LLI;
-    c1.val.numlit.val.int_val = 16;
-
-    r2.node_type = NUMLIT;
-    r2.val.numlit.type = LLI;
-    r2.val.numlit.val.int_val = 18;
-
-    print_ast_node(0, &p);
-
-    return 0;
-}
+#include "ast.h"
 
 char *unop_to_char(enum unop_type type) {
     char *ret_str;
     char *msg;
     switch (type) {
-        case NOT:
+        case U_ADDRESSOF:
             msg = "!";
             break;
-        case BIT_NOT:
+        case U_DEREF:
+            msg = "*";
+            break;
+        case U_NOT:
+            msg = "!";
+            break;
+        case U_BIT_NOT:
             msg = "~";
             break;
-        case POS:
+        case U_POS:
             msg = "+";
             break;
-        case NEG:
+        case U_NEG:
             msg = "-";
             break;
-        case PRE_PLUSPLUS:
+        case U_PRE_PLUSPLUS:
             msg = "++i";
             break;
-        case PRE_MINUSMINUS:
+        case U_PRE_MINUSMINUS:
             msg = "--i";
             break;
-        case POST_PLUSPLUS:
+        case U_POST_PLUSPLUS:
             msg = "i++";
             break;
-        case POST_MINUSMINUS:
+        case U_POST_MINUSMINUS:
             msg = "i--";
             break;
         default:
@@ -215,92 +47,101 @@ char *binop_to_str(enum binop_type type) {
     char *ret_str;
     char *msg;
     switch (type) {
-        case PLUS:
+        case B_PLUS:
             msg = "+";
             break;
-        case MINUS:
+        case B_MINUS:
             msg = "-";
             break;
-        case TIMES:
+        case B_TIMES:
             msg = "*";
             break;
-        case DIVIDE:
+        case B_DIVIDE:
             msg = "/";
             break;
-        case BIT_AND:
+        case B_BIT_AND:
             msg = "&";
             break;
-        case BIT_OR:
+        case B_BIT_OR:
             msg = "|";
             break;
-        case BIT_XOR:
+        case B_BIT_XOR:
             msg = "^";
             break;
-        case MOD:
+        case B_MOD:
             msg = "%";
             break;
-        case LT:
+        case B_LT:
             msg = "<";
             break;
-        case GT:
+        case B_GT:
             msg = ">";
             break;
-        case LTEQ:
+        case B_LTEQ:
             msg = "<=";
             break;
-        case GTEQ:
+        case B_GTEQ:
             msg = ">=";
             break;
-        case EQEQ:
+        case B_EQEQ:
             msg = "==";
             break;
-        case NOTEQ:
+        case B_NOTEQ:
             msg = "!=";
             break;
-        case LOG_AND:
+        case B_LOG_AND:
             msg = "&&";
             break;
-        case LOG_OR:
+        case B_LOG_OR:
             msg = "||";
             break;
-        case SHL:
+        case B_SHL:
             msg = "<<";
             break;
-        case SHR:
+        case B_SHR:
             msg = ">>";
             break;
-        case EQ:
+        case B_EQ:
             msg = "=";
             break;
-        case TIMESEQ:
+        case B_TIMESEQ:
             msg = "*=";
             break;
-        case DIVEQ:
+        case B_DIVEQ:
             msg = "/=";
             break;
-        case MODEQ:
+        case B_MODEQ:
             msg = "%=";
             break;
-        case PLUSEQ:
+        case B_PLUSEQ:
             msg = "+=";
             break;
-        case MINUSEQ:
+        case B_MINUSEQ:
             msg = "-=";
             break;
-        case SHLEQ:
+        case B_SHLEQ:
             msg = "<<=";
             break;
-        case SHREQ:
+        case B_SHREQ:
             msg = ">>=";
             break;
-        case BIT_ANDEQ:
+        case B_BIT_ANDEQ:
             msg = "&=";
             break;
-        case BIT_OREQ:
+        case B_BIT_OREQ:
             msg = "|=";
             break;
-        case BIT_XOREQ:
+        case B_BIT_XOREQ:
             msg = "^=";
+            break;
+        case B_STRUCT_OFFSET:
+            msg = ".";
+            break;
+        case B_INDSEL:
+            msg = "->";
+            break;
+        case B_ASSIGN_LIST:
+            msg = ", (ASSIGN LIST)";
             break;
         default:
             msg = "N/A";
@@ -315,7 +156,7 @@ char *triop_to_char(enum triop_type type) {
     char *ret_str;
     char *msg;
     switch (type) {
-        case TERNARY:
+        case T_TERNARY:
             msg = "?";
             break;
         default:
@@ -327,46 +168,79 @@ char *triop_to_char(enum triop_type type) {
     return ret_str;
 }
 
+void free_ast_tree(ast_node *root) {
+    switch (root->node_type) {
+        case AST_NUMLIT:
+        case AST_CHARLIT:
+        case AST_STRLIT:
+        case AST_IDENT:
+            free(root);
+            break;
+        case AST_UNOP:
+            free_ast_tree(root->val.unop.center);
+            break;
+        case AST_BINOP:
+            free_ast_tree(root->val.binop.left);
+            free_ast_tree(root->val.binop.right);
+            break;
+        case AST_TRIOP:
+            free_ast_tree(root->val.triop.left);
+            free_ast_tree(root->val.triop.center);
+            free_ast_tree(root->val.triop.right);
+            break;
+        default:
+            break;
+    }
+    free(root);
+    return;
+}
+
+void print_ast_tree(ast_node *root) {
+    print_ast_node(0, root);
+}
+
 void print_ast_node(int depth, ast_node *node) {
     char *op;
     for (int i = 0; i < depth; i++) {
         printf("-- ");
     }
     switch (node->node_type) {
-        case NUMLIT:
+        case AST_NUMLIT:
             switch (node->val.numlit.type) {
-                case LLF:
+                case N_LLF:
                     printf("FLOAT: %Lf\n", node->val.numlit.val.real_val);
                     break;
-                case LLI:
+                case N_LLI:
                     printf("INT: %lld\n", node->val.numlit.val.int_val);
                     break;
             }
             break;
-        case CHARLIT:
-            printf("CHAR: %c\n", node->val.charlit.val);
+        case AST_CHARLIT:
+            printf("CHAR: ");
+            print_char(node->val.charlit.val);
             break;
-        case STRLIT:
-            printf("STRING: %s\n", node->val.strlit.val);
+        case AST_STRLIT:
+            printf("STRING: ");
+            print_string(node->val.strlit.val, node->val.strlit.len);
             break;
-        case IDENT:
+        case AST_IDENT:
             printf("IDENT: %s\n", node->val.ident.ident_name);
             break;
-        case UNOP:
+        case AST_UNOP:
             op = unop_to_char(node->val.unop.op);
             printf("UNOP: %s\n", op);
             free(op);
             print_ast_node(depth + 1, node->val.unop.center);
             break;
-        case BINOP:
+        case AST_BINOP:
             op = binop_to_str(node->val.binop.op);
             printf("BINOP: %s\n", op);
             free(op);
             print_ast_node(depth + 1, node->val.binop.left);
             print_ast_node(depth + 1, node->val.binop.right);
             break;
-        case TRIOP:
-            op = unop_to_char(node->val.triop.op);
+        case AST_TRIOP:
+            op = triop_to_char(node->val.triop.op);
             printf("TRIOP: %s\n", op);
             free(op);
             print_ast_node(depth + 1, node->val.triop.left);
@@ -377,4 +251,57 @@ void print_ast_node(int depth, ast_node *node) {
             printf("\rERROR\n");
             break;
     }
+}
+
+ast_node* create_unop_node(enum unop_type op, ast_node *center) {
+    ast_node *unop_node = calloc(1, sizeof(ast_node));
+    unop_node->node_type = AST_UNOP;
+    unop_node->val.unop.op = op;
+    unop_node->val.unop.center = center;
+    return unop_node;
+}
+
+ast_node* create_binop_node(enum binop_type op, ast_node *left, ast_node *right) {
+    ast_node *binop_node = calloc(1, sizeof(ast_node));
+    binop_node->node_type = AST_BINOP;
+    binop_node->val.binop.op = op;
+    binop_node->val.binop.left = left;
+    binop_node->val.binop.right = right;
+    return binop_node;
+}
+
+ast_node* create_triop_node(enum binop_type op, ast_node *left, ast_node *center, ast_node *right) {
+    ast_node *triop_node = calloc(1, sizeof(ast_node));
+    triop_node->node_type = AST_TRIOP;
+    triop_node->val.triop.op = op;
+    triop_node->val.triop.left = left;
+    triop_node->val.triop.center = center;
+    triop_node->val.triop.right = right;
+    return triop_node;
+}
+
+int is_printable(char c) {
+    return (c <= '~') && (c >= ' ');
+}
+
+void print_string(char *str, int len) {
+    printf("\"");
+    for (int i = 0; i < len; i++) {
+        if (is_printable(str[i])) {
+            printf("%c", str[i]);
+        } else {
+            printf("\\x%02x", str[i]);
+        }
+    }
+    printf("\"\n");
+}
+
+void print_char(char c) {
+    printf("\'");
+    if (is_printable(c)) {
+        printf("%c", c);
+    } else {
+        printf("\\x%02x", c);
+    }
+    printf("\'\n");
 }
