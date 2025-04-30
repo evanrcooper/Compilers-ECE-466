@@ -47,20 +47,20 @@ enum TYPE_SPECIFIERS {
 
 struct symbol_table_entry_ll_node {
     char *name;
-    SYMBOL_ROLE role;
+    enum SYMBOL_ROLE role;
     ast_node *type;
-    symbol_table_entry_ll_node *next;
+    struct symbol_table_entry_ll_node *next;
 };
 
 struct symbol_table {
-    symbol_table_entry_ll_node *first;
+    struct symbol_table_entry_ll_node *first;
 };
 
 struct symbol_table_dll_node {
-    symbol_table_dll_node *next;
-    symbol_table_dll_node *prev;
-    TABLE_SCOPE scope;
-    symbol_table *table;
+    struct symbol_table_dll_node *next;
+    struct symbol_table_dll_node *prev;
+    enum TABLE_SCOPE scope;
+    struct symbol_table *table;
 };
 
 #endif // SYMTAB_H
