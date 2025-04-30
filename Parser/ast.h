@@ -15,7 +15,7 @@ struct ast_node_charlit;
 struct ast_node_strlit;
 
 enum unop_type { // op1 id1
-    U_NOT, // !
+    U_NOT = 1, // !
     U_BIT_NOT, // ~
     U_POS, // +
     U_NEG, // -
@@ -28,7 +28,7 @@ enum unop_type { // op1 id1
 };
 
 enum binop_type { // id1 op1 id2
-    B_PLUS, // +
+    B_PLUS = 1, // +
     B_MINUS, // -
     B_TIMES, // *
     B_DIVIDE, // /
@@ -57,28 +57,29 @@ enum binop_type { // id1 op1 id2
     B_BIT_ANDEQ, // &=
     B_BIT_OREQ, // |=
     B_BIT_XOREQ, // ^=
-    B_ASSIGN_LIST, // expr, expr
+    B_COMMA, // expr, expr
     B_STRUCT_OFFSET, // a.b
     B_INDSEL, // a->b
 };
 
 enum triop_type { // id1 op1 id2 op2 id3
-    T_TERNARY, // ? :
+    T_TERNARY = 1, // ? :
 };
 
 enum numlit_type {
-    N_LLI, // long long int
+    N_LLI = 1, // long long int
     N_LLF, // long double
 };
 
 enum ast_node_type {
-    AST_NUMLIT,
+    AST_NUMLIT = 1,
     AST_CHARLIT,
     AST_STRLIT,
     AST_IDENT,
     AST_UNOP,
     AST_BINOP,
     AST_TRIOP,
+    AST_TYPE,
 };
 
 struct ast_node_unop {

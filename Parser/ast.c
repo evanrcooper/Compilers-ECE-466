@@ -5,7 +5,7 @@ char *unop_to_char(enum unop_type type) {
     char *msg;
     switch (type) {
         case U_ADDRESSOF:
-            msg = "!";
+            msg = "&";
             break;
         case U_DEREF:
             msg = "*";
@@ -140,7 +140,7 @@ char *binop_to_str(enum binop_type type) {
         case B_INDSEL:
             msg = "->";
             break;
-        case B_ASSIGN_LIST:
+        case B_COMMA:
             msg = ", (ASSIGN LIST)";
             break;
         default:

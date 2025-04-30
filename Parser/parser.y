@@ -6,6 +6,7 @@
 
 %code requires {
     #include "ast.h"
+    #include "../SymbolTable/sym_tab.h"
     #include <stdio.h>
     #include <stdlib.h>
     int yyerror(const char *s);
@@ -85,7 +86,7 @@
 %type <node> conditional-expression
 %type <node> assignment-expression
 %type <node> expression
-/* %type <node> constant-expression */
+%type <node> constant-expression
 %type <node> expression-stmt
 %type <node> ident-expr
 
@@ -98,7 +99,7 @@
 
 program:
     /* empty */
-    | expression-stmt program
+    | program expression-stmt
 
 ident-expr:
     IDENT {
@@ -245,11 +246,11 @@ assignment-expression:
 
 expression:
     assignment-expression {$$ = $1;}
-    | expression ',' assignment-expression {$$ = create_binop_node(B_ASSIGN_LIST, $1, $3);}
+    | expression ',' assignment-expression {$$ = create_binop_node(B_COMMA, $1, $3);}
 
 /* 6.6 CONSTANT EXPRESSIONS */
-/* constant-expression:
-    conditional-expression {$$ = $1;} */
+constant-expression:
+    conditional-expression {$$ = $1;}
 
 expression-stmt:
     expression ';' {
@@ -257,6 +258,200 @@ expression-stmt:
         // free_ast_tree($1);
         $$ = NULL;
     }
+
+/* 6.7 DECLARATORS */
+
+declaration:
+    declaration-specifiers init-declarator-list ';'
+    | declaration-specifiers ';'
+
+declaration-specifiers:
+    storage-class-specifier declaration-specifiers
+    | storage-class-specifier
+    | type-specifier declaration-specifiers
+    | type-specifier
+    | type-qualifier declaration-specifiers
+    | type-qualifier
+    | function-specifier declaration-specifiers
+    | function-specifier
+
+init-declarator-list:
+    init-declarator
+    | init-declarator-list ',' init-declarator
+    
+init-declarator:
+    declarator
+    | declarator '=' initializer
+
+storage-class-specifier:
+    TYPEDEF
+    | EXTERN
+    | STATIC
+    | AUTO
+    | REGISTER
+
+type-specifier:
+    | VOID
+    | CHAR
+    | SHORT
+    | INT
+    | LONG
+    | FLOAT
+    | DOUBLE
+    | SIGNED
+    | UNSIGNED
+    | _BOOL
+    | _COMPLEX
+    | _IMAGINARY
+    | struct-or-union-specifier
+    | enum-specifier
+    | typedef-name
+
+struct-or-union-specifier:
+    struct-or-union IDENT '{' struct-declaration-list '}'
+    | struct-or-union '{' struct-declaration-list '}'
+    | struct-or-union IDENT
+
+struct-or-union:
+    STRUCT
+    | UNION
+
+struct-declaration-list:
+    struct-declaration
+    | struct-declaration-list struct-declaration
+
+struct-declaration:
+    specifier-qualifier-list struct-declarator-list ';'
+
+specifier-qualifier-list:
+    type-specifier specifier-qualifier-list
+    | type-specifier
+    | type-qualifier specifier-qualifier-list
+    | type-qualifier
+
+struct-declarator-list:
+    struct-declarator
+    | struct-declarator-list ',' struct-declarator
+
+struct-declarator:
+    declarator
+    | declarator ':' constant-expression
+    | ':' constant-expression
+
+
+enum-specifier:
+    ENUM IDENT '{' enumerator-list '}'
+    | ENUM '{' enumerator-list '}'
+    | ENUM IDENT '{' enumerator-list ',' '}'
+    | ENUM '{' enumerator-list ',' '}'
+    | ENUM IDENT
+
+enumerator-list:
+    enumerator
+    | enumerator-list ',' enumerator
+
+enumerator:
+    IDENT
+    | IDENT '=' constant-expression
+
+type-qualifier:
+    CONST
+    | RESTRICT
+    | VOLATILE
+
+function-specifier:
+    INLINE
+
+declarator:
+    pointer direct-declarator
+    | direct-declarator
+
+direct-declarator:
+    IDENT
+    | '(' declarator ')'
+    | direct-declarator '[' NUMLIT ']'
+    | direct-declarator '[' ']'
+    | direct-declarator '(' parameter-type-list ')'
+    | direct-declarator '(' identifier-list ')'
+    | direct-declarator '(' ')'
+
+pointer:
+    '*'
+    | '*' pointer
+    | '*' type-qualifier-list
+    | '*' type-qualifier-list pointer
+
+type-qualifier-list:
+    type-qualifier
+    | type-qualifier-list type-qualifier
+
+parameter-type-list:
+    parameter-list
+    | parameter-list ',' ELLIPSIS
+
+parameter-list:
+    parameter-declaration
+    | parameter-list ',' parameter-declaration
+
+parameter-declaration:
+    declaration-specifiers declarator
+    | declaration-specifiers abstract-declarator
+    | declaration-specifiers
+
+identifier-list:
+    IDENT
+    | identifier-list ',' IDENT
+
+type-name:
+    specifier-qualifier-list abstract-declarator
+    | specifier-qualifier-list
+
+abstract-declarator:
+    pointer
+    | pointer direct-abstract-declarator
+    | direct-abstract-declarator
+
+direct-abstract-declarator:
+    '(' abstract-declarator ')'
+    | direct-abstract-declarator '[' assignment-expression ']'
+    | direct-abstract-declarator '[' ']'
+    | '[' assignment-expression ']'
+    | '[' ']'
+    | direct-abstract-declarator '[' '*' ']'
+    | '[' '*' ']'
+    | direct-abstract-declarator '(' parameter-type-list ')'
+    | direct-abstract-declarator '(' ')'
+    | '(' parameter-type-list ')'
+    | '(' ')'
+
+typedef-name:
+    IDENT
+
+initializer:
+    assignment-expression
+    | '{' initializer-list '}'
+    | '{' initializer-list ',' '}'
+
+initializer-list:
+    designation initializer
+    | initializer
+    | initializer-list ',' designation initializer
+    | initializer-list ','  initializer
+
+designation:
+    designator-list '='
+
+designator-list:
+    designator
+    | designator-list designator
+
+designator:
+    '[' constant-expression ']'
+    | '.' IDENT
+
+
+
+
 
 %%
 
