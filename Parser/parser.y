@@ -33,41 +33,41 @@
 
 %token ELLIPSIS
 %token AUTO
-%token BREAK
-%token CASE
+/* %token BREAK
+%token CASE */
 %token CHAR
 %token CONST
-%token CONTINUE
+/* %token CONTINUE
 %token DEFAULT
-%token DO
+%token DO */
 %token DOUBLE
-%token ELSE
+/* %token ELSE */
 %token ENUM
 %token EXTERN
 %token FLOAT
-%token FOR
-%token GOTO
-%token IF
+/* %token FOR */
+/* %token GOTO */
+/* %token IF */
 %token INLINE
 %token INT
 %token LONG
 %token REGISTER
 %token RESTRICT
-%token RETURN
+/* %token RETURN */
 %token SHORT
 %token SIGNED
-%token SIZEOF
+/* %token SIZEOF */
 %token STATIC
 %token STRUCT
-%token SWITCH
+/* %token SWITCH */
 %token TYPEDEF
 %token UNION
 %token UNSIGNED
 %token VOID
 %token VOLATILE
-%token WHILE
+/* %token WHILE */
 
-%token _BOOL _COMPLEX _IMAGINARY
+/* %token _BOOL _COMPLEX _IMAGINARY */
 
 %type <node> primary-expression 
 %type <node> postfix-expression 
@@ -151,15 +151,14 @@ postfix-expression:
     /* | '(' type-name ')' '{' initializer-list '}' */
     /* | '(' type-name ')' '{' initializer-list ',' '}' */
 
-/* argument-expression-list-opt: */
+argument-expression-list-opt:
     /* empty */
-    /* | argument-expression-list */
+    | argument-expression-list
 
-/*
 argument-expression-list:
     assignment-expression
     | argument-expression-list ',' assignment-expression
-*/
+
 
 unary-expression:
     postfix-expression {$$ = $1;}
@@ -300,9 +299,9 @@ type-specifier:
     | DOUBLE
     | SIGNED
     | UNSIGNED
-    | _BOOL
+    /* | _BOOL
     | _COMPLEX
-    | _IMAGINARY
+    | _IMAGINARY */
     | struct-or-union-specifier
     | enum-specifier
     | typedef-name
@@ -448,10 +447,6 @@ designator-list:
 designator:
     '[' constant-expression ']'
     | '.' IDENT
-
-
-
-
 
 %%
 
