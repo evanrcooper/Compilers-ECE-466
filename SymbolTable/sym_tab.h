@@ -28,8 +28,9 @@ enum TABLE_SCOPE {
     TABLE_PROTOTYPE,
 };
 
-enum STORAGE {
-    CLASS_EXTERN = 1,
+enum STORAGE_CLASS {
+    CLASS_EXTERN_EXPLICIT = 1,
+    CLASS_EXTERN_IMPLICIT,
     CLASS_STATIC,
     CLASSDEF,
     CLASS_AUTO,
@@ -46,10 +47,30 @@ enum TYPE_SPECIFIERS {
 };
 
 struct symbol_table_entry_ll_node {
+    struct symbol_table_entry_ll_node *next;
     char *name;
     enum SYMBOL_ROLE role;
-    ast_node *type;
-    struct symbol_table_entry_ll_node *next;
+    /* int line_declared;
+     char *filename; */
+    union {
+        struct {
+            enum SYMBOL_SCOPE scope;
+            ast_node *return_type;
+            ast_node *content;
+            struct symbol_table_dll_node *context_table;
+        } function;
+        struct {
+            char defined;
+            enum SYMBOL_SCOPE scope;
+            enum STORAGE_CLASS storage;
+            ast_node *type;
+        } variable;
+        struct {
+            enum SYMBOL_SCOPE scope;
+            char is_defined;
+            ast_node *jump_loc;
+        } label;
+    } specs;
 };
 
 struct symbol_table {
@@ -57,10 +78,16 @@ struct symbol_table {
 };
 
 struct symbol_table_dll_node {
-    struct symbol_table_dll_node *next;
     struct symbol_table_dll_node *prev;
     enum TABLE_SCOPE scope;
-    struct symbol_table *table;
+    struct symbol_table table;
 };
+
+void init_global_table();
+struct symbol_table_entry_ll_node *create_new_blank_entry();
+struct symbol_table_dll_node *new_scope(enum TABLE_SCOPE scope);
+int exit_scope();
+void insert_symbol_var(char *name, enum SYMBOL_SCOPE scope, enum STORAGE_CLASS storage);
+void insert_symbol_fn(char *name, enum SYMBOL_SCOPE scope);
 
 #endif // SYMTAB_H
