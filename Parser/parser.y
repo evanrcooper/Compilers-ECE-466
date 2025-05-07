@@ -2,6 +2,7 @@
     #include "parser.tab.h"
     int yylex(void);
     extern FILE *yyin;
+    struct symbol_table_dll_node *CURRENT_SCOPE;
 %}
 
 %code requires {
