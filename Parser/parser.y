@@ -3,6 +3,7 @@
     int yylex(void);
     extern FILE *yyin;
     struct symbol_table_dll_node *CURRENT_SCOPE;
+    init_global_table();
 %}
 
 %code requires {

@@ -61,6 +61,7 @@ struct symbol_table_entry_ll_node {
     char *name;
     struct symbol_table_entry_ll_node *next;
     enum SYMBOL_SCOPE scope;
+    struct symbol_table_dll_node *table_scope;
     /* int line_declared;
      char *filename; */
     union {
@@ -107,5 +108,7 @@ void print_label(struct symbol_table_entry_ll_node *node, int indents);
 void print_symbol(struct symbol_table_entry_ll_node *node, int indents);
 void print_symbol_table_scope(struct symbol_table_dll_node *table, int indents);
 void print_symbol_table(struct symbol_table_dll_node *table, int indents);
+struct symbol_table_entry_ll_node* find_symbol_in_table(char *name, struct symbol_table_dll_node *table);
+struct symbol_table_entry_ll_node* find_symbol_in_scope(char *name, struct symbol_table_dll_node *deepest_scope);
 
 #endif // SYMTAB_H

@@ -42,6 +42,9 @@ int exit_scope() {
     return 0;
 }
 
+// RESPONSIBILITY OF CALLER TO ASSERT THAT SYMBOL WITH 
+// THE NAME PROVIDED IS NOT ALLREADY IN DEEPEST SCOPE 
+
 void insert_symbol_var(char *name, enum SYMBOL_SCOPE scope, enum STORAGE_CLASS storage) {
     struct symbol_table_entry_ll_node *node = create_new_blank_entry();
     node->name = name;
@@ -259,4 +262,28 @@ void print_symbol_table(struct symbol_table_dll_node *symbol_table, int indents)
         current = current->next;
     }
     return;
+}
+
+struct symbol_table_entry_ll_node* find_symbol_in_scope(char *name, struct symbol_table_dll_node *deepest_scope) {
+    struct symbol_table_dll_node *current = deepest_scope;
+    struct symbol_table_entry_ll_node *node;
+    while (current) {
+        node = find_symbol_in_table(name, current);
+        if (node) {
+            return node;
+        }
+        current = current->prev;
+    }
+    return NULL;
+}
+
+struct symbol_table_entry_ll_node* find_symbol_in_table(char *name, struct symbol_table_dll_node *table) {
+    struct symbol_table_entry_ll_node *current = table->table.first;
+    while (current) {
+        if (strcmp(current->name, name) == 0) {
+            return current;
+        }
+        current = current->next;
+    }
+    return NULL;
 }
