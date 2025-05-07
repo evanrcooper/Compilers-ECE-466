@@ -3,10 +3,20 @@
 
 #include "../Parser/ast.h"
 
+#define PRINT_VARIABLE_TYPE 0
+
+#define PRINT_FUNCTION_RETURN_TYPE 0
+#define PRINT_FUNCTION_CONTENT 0
+#define PRINT_FUNCTION_SYMBOL_TABLE 0
+
+#define PRINT_LABEL_JUMP_LOCATION 0
+
+#define PRINT_ALL_SYMBOL_INFO_FROM_TABLE 0
+
 enum SYMBOL_ROLE {
     SYM_VAR = 1,
     SYM_FUNC,
-    SYMDEF,
+    SYM_TYPDEF,
     SYM_STRUCT,
     SYM_ENUM,
     SYM_MEMBER,
@@ -47,26 +57,24 @@ enum TYPE_SPECIFIERS {
 };
 
 struct symbol_table_entry_ll_node {
-    struct symbol_table_entry_ll_node *next;
-    char *name;
     enum SYMBOL_ROLE role;
+    char *name;
+    struct symbol_table_entry_ll_node *next;
+    enum SYMBOL_SCOPE scope;
     /* int line_declared;
      char *filename; */
     union {
         struct {
-            enum SYMBOL_SCOPE scope;
+            char is_defined;
+            enum STORAGE_CLASS storage;
+            ast_node *type;
+        } variable;
+        struct {
             ast_node *return_type;
             ast_node *content;
             struct symbol_table_dll_node *context_table;
         } function;
         struct {
-            char defined;
-            enum SYMBOL_SCOPE scope;
-            enum STORAGE_CLASS storage;
-            ast_node *type;
-        } variable;
-        struct {
-            enum SYMBOL_SCOPE scope;
             char is_defined;
             ast_node *jump_loc;
         } label;
@@ -89,5 +97,15 @@ struct symbol_table_dll_node *new_scope(enum TABLE_SCOPE scope);
 int exit_scope();
 void insert_symbol_var(char *name, enum SYMBOL_SCOPE scope, enum STORAGE_CLASS storage);
 void insert_symbol_fn(char *name, enum SYMBOL_SCOPE scope);
+void insert_symbol_lab(char *name, enum SYMBOL_SCOPE scope);
+void print_indents(int indents);
+void print_symbol_role(struct symbol_table_entry_ll_node *node, int indents);
+void print_symbol_scope(struct symbol_table_entry_ll_node *node, int indents);
+void print_variable(struct symbol_table_entry_ll_node *node, int indents);
+void print_function(struct symbol_table_entry_ll_node *node, int indents);
+void print_label(struct symbol_table_entry_ll_node *node, int indents);
+void print_symbol(struct symbol_table_entry_ll_node *node, int indents);
+void print_symbol_table_scope(struct symbol_table_dll_node *table, int indents);
+void print_symbol_table(struct symbol_table_dll_node *table, int indents);
 
 #endif // SYMTAB_H
