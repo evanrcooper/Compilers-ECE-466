@@ -51,7 +51,9 @@ void insert_symbol_var(char *name, enum SYMBOL_SCOPE scope, enum STORAGE_CLASS s
     node->role = SYM_VAR;
     node->scope = scope;
     node->specs.variable.storage = storage;
+    node->table_scope = CURRENT_SCOPE;
     /* node->specs.variable.type = NULL; */
+    /* node->relative_address = 0;*/
 }
 
 void insert_symbol_fn(char *name, enum SYMBOL_SCOPE scope) {
@@ -59,6 +61,7 @@ void insert_symbol_fn(char *name, enum SYMBOL_SCOPE scope) {
     node->name = name;
     node->role = SYM_FUNC;
     node->scope = scope;
+    node->table_scope = CURRENT_SCOPE;
     /* node->specs.function.return_type = NULL; */
     /* node->specs.function.content = NULL; */
     /* node->specs.function.defined = 0; */
@@ -70,6 +73,7 @@ void insert_symbol_lab(char *name, enum SYMBOL_SCOPE scope) {
     node->name = name;
     node->role = SYM_LABEL;
     node->scope = scope;
+    node->table_scope = CURRENT_SCOPE;
     /* node->specs.label.is_defined = 0; */
     /* node->specs.label.jump_loc = NULL; */
 }

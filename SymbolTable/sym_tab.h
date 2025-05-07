@@ -56,6 +56,10 @@ enum TYPE_SPECIFIERS {
     TYPE_STRUCT,
 };
 
+enum ADDRESSING_TYPE {
+    EBP_OFFSET = 1,
+};
+
 struct symbol_table_entry_ll_node {
     enum SYMBOL_ROLE role;
     char *name;
@@ -69,6 +73,7 @@ struct symbol_table_entry_ll_node {
             char is_defined;
             enum STORAGE_CLASS storage;
             ast_node *type;
+            int relative_address;
         } variable;
         struct {
             ast_node *return_type;
