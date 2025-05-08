@@ -280,6 +280,24 @@ ast_node* create_triop_node(enum binop_type op, ast_node *left, ast_node *center
     return triop_node;
 }
 
+ast_node* create_primitive_type_node(enum primitive_type type) {
+    ast_node *primitive_type_node = calloc(1, sizeof(ast_node));
+    primitive_type_node->node_type = AST_PRIMITIVE_TYPE;
+    primitive_type_node->val.primitive_type.type = type;
+    /* primitive_type_node->val.primitive_type.next = NULL; */
+    return primitive_type_node;
+}
+
+// array_size optional for non CONSTANT_SIZED_ARRAY modifier
+ast_node* create_type_modifier_node(enum type_modifier modifier, int array_size) {
+    ast_node *type_mod_node = calloc(1, sizeof(ast_node));
+    type_mod_node->node_type = AST_TYPE_MOD;
+    type_mod_node->val.type_mod.modifier = modifier;
+    type_mod_node->val.type_mod.array_size = array_size;
+    /* type_mod_node->val.type_mod.next = NULL; */
+    return type_mod_node;
+}
+
 int is_printable(char c) {
     return (c <= '~') && (c >= ' ');
 }

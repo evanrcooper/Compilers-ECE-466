@@ -79,7 +79,25 @@ enum ast_node_type {
     AST_UNOP,
     AST_BINOP,
     AST_TRIOP,
-    AST_TYPE,
+    AST_PRIMITIVE_TYPE,
+    AST_TYPE_MOD,
+};
+
+enum primitive_type {
+    TYPE_UNSIGNED_LONG_LONG = 1, // 64 bit usigned value
+    TYPE_SIGNED_LONG_LONG, // 64 bit signed value
+    TYPE_UNSIGNED_INT, // 32 bit usigned value
+    TYPE_SIGNED_INT, // 32 bit signed value
+    TYPE_UNSIGNED_SHORT, // 16 bit usigned value
+    TYPE_SIGNED_SHORT, // 16 bit signed value
+    TYPE_UNSIGNED_CHAR, // 8 bit unsigned value
+    TYPE_SIGNED_CHAR, // 8 bit signed value
+};
+
+enum type_modifier {
+    POINTER = 1, // *
+    CONSTANT_SIZED_ARRAY, // [1]
+    UNSIZED_ARRAY, // []
 };
 
 struct ast_node_unop {
@@ -110,6 +128,7 @@ struct ast_node_numlit {
 
 struct ast_node_ident {
     char *ident_name;
+    struct symbol_table_entry_ll_node *symbol; // symbol table entry
 };
 
 struct ast_node_charlit {
@@ -119,6 +138,17 @@ struct ast_node_charlit {
 struct ast_node_strlit {
     char *val;
     unsigned long long len;
+};
+
+struct ast_node_primitive_type {
+    ast_node *next;
+    enum primitive_type type;
+};
+
+struct ast_node_type_modifier {
+    ast_node *next;
+    enum type_modifier modifier;
+    int array_size; // ONLY USED FOR CONSTANT_SIZED_ARRAY
 };
 
 typedef struct ast_node_struct {
@@ -131,6 +161,8 @@ typedef struct ast_node_struct {
         struct ast_node_ident ident;
         struct ast_node_charlit charlit;
         struct ast_node_strlit strlit;
+        struct ast_node_primitive_type primitive_type;
+        struct ast_node_type_modifier type_mod;
         /* ... */
     } val;
 } ast_node;

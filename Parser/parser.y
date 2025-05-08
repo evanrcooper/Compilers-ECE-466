@@ -108,6 +108,7 @@ ident-expr:
         ast_node *ident_node = calloc(1, sizeof(ast_node));
         ident_node->node_type = AST_IDENT;
         ident_node->val.ident.ident_name = strdup(yylval.str_val);
+        /* ident_node->val.ident.symbol = 0; */
         $$ = ident_node;
     }
 
