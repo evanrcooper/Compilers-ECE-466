@@ -291,3 +291,7 @@ struct symbol_table_entry_ll_node* find_symbol_in_table(char *name, struct symbo
     }
     return NULL;
 }
+
+enum TABLE_SCOPE get_scope_type() {
+    return CURRENT_SCOPE->scope;
+}

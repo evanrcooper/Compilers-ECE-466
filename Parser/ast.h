@@ -180,6 +180,9 @@ ast_node* create_unop_node(enum unop_type op, ast_node *center);
 ast_node* create_binop_node(enum binop_type op, ast_node *left, ast_node *right);
 ast_node* create_triop_node(enum binop_type op, ast_node *left, ast_node *center, ast_node *right);
 
+ast_node* create_primitive_type_node(enum primitive_type type);
+ast_node* create_type_modifier_node(enum type_modifier modifier, int array_size);
+
 typedef struct DYNAMIC_STRING {
     char *str_val;
     unsigned long long str_len;

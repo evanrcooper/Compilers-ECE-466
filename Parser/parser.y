@@ -3,7 +3,6 @@
     int yylex(void);
     extern FILE *yyin;
     struct symbol_table_dll_node *CURRENT_SCOPE;
-    init_global_table();
 %}
 
 %code requires {
@@ -35,41 +34,44 @@
 
 %token ELLIPSIS
 %token AUTO
-/* %token BREAK
-%token CASE */
+%token BREAK
+%token CASE
 %token CHAR
 %token CONST
-/* %token CONTINUE
+%token CONTINUE
 %token DEFAULT
-%token DO */
+%token DO
 %token DOUBLE
-/* %token ELSE */
+%token ELSE
 %token ENUM
 %token EXTERN
 %token FLOAT
-/* %token FOR */
-/* %token GOTO */
-/* %token IF */
+%token FOR
+%token GOTO
+%token IF
 %token INLINE
 %token INT
 %token LONG
 %token REGISTER
 %token RESTRICT
-/* %token RETURN */
+%token RETURN
 %token SHORT
 %token SIGNED
-/* %token SIZEOF */
+%token SIZEOF
 %token STATIC
 %token STRUCT
-/* %token SWITCH */
+%token SWITCH
 %token TYPEDEF
 %token UNION
 %token UNSIGNED
 %token VOID
 %token VOLATILE
-/* %token WHILE */
+%token WHILE
 
-/* %token _BOOL _COMPLEX _IMAGINARY */
+%token _BOOL
+%token _COMPLEX
+%token _IMAGINARY
+
 
 %type <node> primary-expression 
 %type <node> postfix-expression 
@@ -91,6 +93,8 @@
 %type <node> constant-expression
 %type <node> expression-stmt
 %type <node> ident-expr
+%type <node> pointer
+%type <node> direct-declarator
 
 %%
 
@@ -264,7 +268,7 @@ expression-stmt:
 /* 6.7 DECLARATORS */
 
 declaration:
-    declaration-specifiers init-declarator-list ';'
+    declaration-specifiers declarator-list ';'
     | declaration-specifiers ';'
 
 declaration-specifiers:
@@ -272,18 +276,10 @@ declaration-specifiers:
     | storage-class-specifier
     | type-specifier declaration-specifiers
     | type-specifier
-    | type-qualifier declaration-specifiers
-    | type-qualifier
-    | function-specifier declaration-specifiers
-    | function-specifier
 
-init-declarator-list:
-    init-declarator
-    | init-declarator-list ',' init-declarator
-    
-init-declarator:
+declarator-list:
     declarator
-    | declarator '=' initializer
+    | declarator-list ',' declarator
 
 storage-class-specifier:
     TYPEDEF
@@ -291,6 +287,8 @@ storage-class-specifier:
     | STATIC
     | AUTO
     | REGISTER
+
+type-name
 
 type-specifier:
     | VOID
@@ -302,107 +300,29 @@ type-specifier:
     | DOUBLE
     | SIGNED
     | UNSIGNED
-    /* | _BOOL
-    | _COMPLEX
-    | _IMAGINARY */
-    | struct-or-union-specifier
-    | enum-specifier
-    | typedef-name
-
-struct-or-union-specifier:
-    struct-or-union IDENT '{' struct-declaration-list '}'
-    | struct-or-union '{' struct-declaration-list '}'
-    | struct-or-union IDENT
-
-struct-or-union:
-    STRUCT
-    | UNION
-
-struct-declaration-list:
-    struct-declaration
-    | struct-declaration-list struct-declaration
-
-struct-declaration:
-    specifier-qualifier-list struct-declarator-list ';'
 
 specifier-qualifier-list:
     type-specifier specifier-qualifier-list
     | type-specifier
-    | type-qualifier specifier-qualifier-list
-    | type-qualifier
-
-struct-declarator-list:
-    struct-declarator
-    | struct-declarator-list ',' struct-declarator
-
-struct-declarator:
-    declarator
-    | declarator ':' constant-expression
-    | ':' constant-expression
-
-
-enum-specifier:
-    ENUM IDENT '{' enumerator-list '}'
-    | ENUM '{' enumerator-list '}'
-    | ENUM IDENT '{' enumerator-list ',' '}'
-    | ENUM '{' enumerator-list ',' '}'
-    | ENUM IDENT
-
-enumerator-list:
-    enumerator
-    | enumerator-list ',' enumerator
-
-enumerator:
-    IDENT
-    | IDENT '=' constant-expression
-
-type-qualifier:
-    CONST
-    | RESTRICT
-    | VOLATILE
-
-function-specifier:
-    INLINE
 
 declarator:
     pointer direct-declarator
     | direct-declarator
 
 direct-declarator:
-    IDENT
+    IDENT {$$ = $1;}
     | '(' declarator ')'
     | direct-declarator '[' NUMLIT ']'
     | direct-declarator '[' ']'
-    | direct-declarator '(' parameter-type-list ')'
-    | direct-declarator '(' identifier-list ')'
     | direct-declarator '(' ')'
 
 pointer:
-    '*'
-    | '*' pointer
-    | '*' type-qualifier-list
-    | '*' type-qualifier-list pointer
-
-type-qualifier-list:
-    type-qualifier
-    | type-qualifier-list type-qualifier
-
-parameter-type-list:
-    parameter-list
-    | parameter-list ',' ELLIPSIS
-
-parameter-list:
-    parameter-declaration
-    | parameter-list ',' parameter-declaration
-
-parameter-declaration:
-    declaration-specifiers declarator
-    | declaration-specifiers abstract-declarator
-    | declaration-specifiers
-
-identifier-list:
-    IDENT
-    | identifier-list ',' IDENT
+    '*' {$$ = create_type_modifier_node(POINTER, 0);}
+    | '*' pointer {
+        ast_node *node = create_type_modifier_node(POINTER, 0);
+        ast_node->val.type_mod.next = $2;
+        $$ = node;
+    }
 
 type-name:
     specifier-qualifier-list abstract-declarator
@@ -419,41 +339,13 @@ direct-abstract-declarator:
     | direct-abstract-declarator '[' ']'
     | '[' assignment-expression ']'
     | '[' ']'
-    | direct-abstract-declarator '[' '*' ']'
-    | '[' '*' ']'
-    | direct-abstract-declarator '(' parameter-type-list ')'
     | direct-abstract-declarator '(' ')'
-    | '(' parameter-type-list ')'
     | '(' ')'
-
-typedef-name:
-    IDENT
-
-initializer:
-    assignment-expression
-    | '{' initializer-list '}'
-    | '{' initializer-list ',' '}'
-
-initializer-list:
-    designation initializer
-    | initializer
-    | initializer-list ',' designation initializer
-    | initializer-list ','  initializer
-
-designation:
-    designator-list '='
-
-designator-list:
-    designator
-    | designator-list designator
-
-designator:
-    '[' constant-expression ']'
-    | '.' IDENT
 
 %%
 
 int main() {
+    init_global_table();
     yydebug = 0;
     yyparse();
     return 0;
