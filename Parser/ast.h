@@ -28,6 +28,7 @@ enum unop_type { // op1 id1
     U_SIZEOF_TYPENAME, // sizeof(type-name)
     U_SIZEOF_EXPRESSION, // sizeof(expression)
     U_FUNCTION_TYPE, // function type with return type
+    U_FUNCTION_CALL, // function call, points to function entry in symbol table
 };
 
 enum binop_type { // id1 op1 id2
@@ -64,7 +65,6 @@ enum binop_type { // id1 op1 id2
     B_STRUCT_OFFSET, // a.b
     B_INDSEL, // a->b
     B_TYPECAST, // (type) ident
-    B_FUNCTION_CALL,
 };
 
 enum triop_type { // id1 op1 id2 op2 id3

@@ -43,6 +43,9 @@ char *unop_to_str(enum unop_type type) {
         case U_FUNCTION_TYPE:
             msg = "FUNCTION THAT RETURNS TYPE";
             break;
+        case U_FUNCTION_CALL:
+            msg = "CALL FUNCTION";
+            break;
         default:
             msg = "N/A";
             break;
@@ -200,9 +203,6 @@ char *binop_to_str(enum binop_type type) {
             break;
         case B_TYPECAST:
             msg = "TYPE CAST";
-            break;
-        case B_FUNCTION_CALL:
-            msg = "FUNCTION CALL";
             break;
         default:
             msg = "N/A";

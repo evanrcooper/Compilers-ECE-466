@@ -165,9 +165,9 @@ primary-expression:
 postfix-expression:
     primary-expression {$$ = $1;}
     | postfix-expression '[' expression ']' {$$ = create_unop_node(U_DEREF, create_binop_node(B_PLUS, $1, $3));}
-    /* | postfix-expression '(' argument-expression-list-opt ')' {} */
-    | postfix-expression '.' ident-expr {$$ = create_binop_node(B_STRUCT_OFFSET, $1, $3);}
-    | postfix-expression INDSEL ident-expr {$$ = create_binop_node(B_INDSEL, $1, $3);}
+    /* | postfix-expression '(' argument-expression-list-opt ')' {} */ // TODO B_FUNCTION_CALL: find ident that represents function name, then search symbol table for function and center points to entry in cymbol table
+    /* | postfix-expression '.' ident-expr {$$ = create_binop_node(B_STRUCT_OFFSET, $1, $3);} */
+    /* | postfix-expression INDSEL ident-expr {$$ = create_binop_node(B_INDSEL, $1, $3);} */
     | postfix-expression PLUSPLUS {$$ = create_unop_node(U_POST_PLUSPLUS, $1);}
     | postfix-expression MINUSMINUS {$$ = create_unop_node(U_POST_MINUSMINUS, $1);}
     /* | '(' type-name ')' '{' initializer-list '}' */
