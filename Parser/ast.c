@@ -35,10 +35,13 @@ char *unop_to_str(enum unop_type type) {
             msg = "i--";
             break;
         case U_SIZEOF_TYPENAME:
-            msg = "SIZEOF(type-name)";
+            msg = "SIZEOF(TYPE-NAME)";
             break;
         case U_SIZEOF_EXPRESSION:
-            msg = "SIZEOF expression";
+            msg = "SIZEOF EXPRESSION";
+            break;
+        case U_FUNCTION_TYPE:
+            msg = "FUNCTION THAT RETURNS TYPE";
             break;
         default:
             msg = "N/A";
@@ -197,6 +200,9 @@ char *binop_to_str(enum binop_type type) {
             break;
         case B_TYPECAST:
             msg = "TYPE CAST";
+            break;
+        case B_FUNCTION_CALL:
+            msg = "FUNCTION CALL";
             break;
         default:
             msg = "N/A";

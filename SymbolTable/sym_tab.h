@@ -26,16 +26,13 @@ enum SYMBOL_ROLE {
 enum SYMBOL_SCOPE {
     SYM_LOCAL = 1,
     SYM_GLOBAL,
-    SYM_PARAM,
     SYM_BLOCK,
-    SYM_PROTOTYPE,
 };
 
 enum TABLE_SCOPE {
     TABLE_GLOBAL = 1,
     TABLE_FUNCTION,
     TABLE_BLOCK,
-    TABLE_PROTOTYPE,
 };
 
 struct symbol_table_entry_ll_node {
@@ -79,9 +76,9 @@ void init_global_table();
 struct symbol_table_entry_ll_node *create_new_blank_entry();
 struct symbol_table_dll_node *new_scope(enum TABLE_SCOPE scope);
 int exit_scope();
-void insert_symbol_var(char *name, enum SYMBOL_SCOPE scope, enum storage_class storage);
-void insert_symbol_fn(char *name, enum SYMBOL_SCOPE scope);
-void insert_symbol_lab(char *name, enum SYMBOL_SCOPE scope);
+struct symbol_table_entry_ll_node* insert_symbol_var(char *name, enum SYMBOL_SCOPE scope, enum storage_class storage);
+struct symbol_table_entry_ll_node* insert_symbol_fn(char *name, enum SYMBOL_SCOPE scope);
+struct symbol_table_entry_ll_node* insert_symbol_lab(char *name, enum SYMBOL_SCOPE scope);
 void print_indents(int indents);
 void print_symbol_role(struct symbol_table_entry_ll_node *node, int indents);
 void print_symbol_scope(struct symbol_table_entry_ll_node *node, int indents);

@@ -45,7 +45,7 @@ int exit_scope() {
 // RESPONSIBILITY OF CALLER TO ASSERT THAT SYMBOL WITH 
 // THE NAME PROVIDED IS NOT ALLREADY IN DEEPEST SCOPE 
 
-void insert_symbol_var(char *name, enum SYMBOL_SCOPE scope, enum storage_class storage) {
+struct symbol_table_entry_ll_node* insert_symbol_var(char *name, enum SYMBOL_SCOPE scope, enum storage_class storage) {
     struct symbol_table_entry_ll_node *node = create_new_blank_entry();
     node->name = name;
     node->role = SYM_VAR;
@@ -54,21 +54,23 @@ void insert_symbol_var(char *name, enum SYMBOL_SCOPE scope, enum storage_class s
     node->table_scope = CURRENT_SCOPE;
     /* node->specs.variable.type = NULL; */
     /* node->relative_address = 0;*/
+    return node;
 }
 
-void insert_symbol_fn(char *name, enum SYMBOL_SCOPE scope) {
+struct symbol_table_entry_ll_node* insert_symbol_fn(char *name, enum SYMBOL_SCOPE scope) {
     struct symbol_table_entry_ll_node *node = create_new_blank_entry();
     node->name = name;
     node->role = SYM_FUNC;
     node->scope = scope;
     node->table_scope = CURRENT_SCOPE;
     /* node->specs.function.return_type = NULL; */
-    /* node->specs.function.content = NULL; */
+    // node->specs.function.content = NULL;
     /* node->specs.function.defined = 0; */
     node->specs.function.context_table = new_scope(TABLE_FUNCTION);
+    return node;
 }
 
-void insert_symbol_lab(char *name, enum SYMBOL_SCOPE scope) {
+struct symbol_table_entry_ll_node* insert_symbol_lab(char *name, enum SYMBOL_SCOPE scope) {
     struct symbol_table_entry_ll_node *node = create_new_blank_entry();
     node->name = name;
     node->role = SYM_LABEL;
@@ -76,6 +78,7 @@ void insert_symbol_lab(char *name, enum SYMBOL_SCOPE scope) {
     node->table_scope = CURRENT_SCOPE;
     /* node->specs.label.is_defined = 0; */
     /* node->specs.label.jump_loc = NULL; */
+    return node;
 }
 
 void print_indents(int indents) {
@@ -126,14 +129,8 @@ void print_symbol_scope(struct symbol_table_entry_ll_node *node, int indents) {
         case SYM_GLOBAL:
             printf("SYM_GLOBAL\n");
             break;
-        case SYM_PARAM:
-            printf("SYM_PARAM\n");
-            break;
         case SYM_BLOCK:
             printf("SYM_BLOCK\n");
-            break;
-        case SYM_PROTOTYPE:
-            printf("SYM_PROTOTYPE\n");
             break;
         default:
             printf("UNKNOWN SYMBOL ROLE\n");
@@ -146,22 +143,19 @@ void print_variable(struct symbol_table_entry_ll_node *node, int indents) {
     print_indents(indents);
     printf("STORAGE CLASS: ");
     switch (node->specs.variable.storage) {
-        case CLASS_EXTERN_EXPLICIT:
+        case SC_EXTERN_EXPLICIT:
             printf("CLASS_EXTERN_EXPLICIT\n");
             break;
-        case CLASS_EXTERN_IMPLICIT:
+        case SC_EXTERN_IMPLICIT:
             printf("CLASS_EXTERN_IMPLICIT\n");
             break;
-        case CLASS_STATIC:
+        case SC_STATIC:
             printf("CLASS_STATIC\n");
             break;
-        case CLASSDEF:
-            printf("CLASSDEF\n");
-            break;
-        case CLASS_AUTO:
+        case SC_AUTO:
             printf("CLASS_AUTO\n");
             break;
-        case CLASS_REGISTER:
+        case SC_REGISTER:
             printf("CLASS_REGISTER\n");
             break;
         default:
@@ -242,9 +236,6 @@ void print_symbol_table_scope(struct symbol_table_dll_node *symbol_table, int in
             break;
         case TABLE_BLOCK:
             printf("TABLE_BLOCK\n");
-            break;
-        case TABLE_PROTOTYPE:
-            printf("TABLE_PROTOTYPE\n");
             break;
         default:
             printf("UNKNOWN TABLE SCOPE\n");

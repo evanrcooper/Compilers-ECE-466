@@ -95,12 +95,15 @@
 %type <node> constant-expression
 %type <node> expression-stmt
 %type <node> ident-expr
+%type <node> numlit-expr
 %type <node> pointer
 %type <node> direct-declarator
 %type <node> declarator-list
 %type <node> type-specifier
-%type <node> type-specifier-list
 %type <node> storage-class-specifier
+%type <node> declarator
+%type <node> declaration-specifiers
+%type <node> declaration
 
 %%
 
@@ -112,6 +115,7 @@
 program:
     /* empty */
     | program expression-stmt
+    | program declaration
 
 ident-expr:
     IDENT {
@@ -122,14 +126,19 @@ ident-expr:
         $$ = ident_node;
     }
 
-primary-expression:
-    ident-expr {$$ = $1;}
-    | NUMLIT {
+numlit-expr:
+    NUMLIT {
         ast_node *numlit_node = calloc(1, sizeof(ast_node));
         numlit_node->node_type = AST_NUMLIT;
         numlit_node->val.numlit.val.int_val = yylval.int_val;
         numlit_node->val.numlit.type = N_LLI;
         $$ = numlit_node;
+    }
+
+primary-expression:
+    ident-expr {$$ = $1;}
+    | numlit-expr {
+        $$ = $1;
     }
     | FLOATLIT {
         ast_node *flit_node = calloc(1, sizeof(ast_node));
@@ -184,11 +193,11 @@ unary-expression:
     | '~' cast-expression {$$ = create_unop_node(U_BIT_NOT, $2);}
     | '!' cast-expression {$$ = create_unop_node(U_NOT, $2);}
     | SIZEOF unary-expression {$$ = create_unop_node(U_SIZEOF_EXPRESSION, $2);}
-    | SIZEOF '(' type-name ')' {$$ = create_unop_node(U_SIZEOF_TYPENAME, $3);}
+    /* | SIZEOF '(' type-name ')' {$$ = create_unop_node(U_SIZEOF_TYPENAME, $3);} */
 
 cast-expression:
     unary-expression {$$ = $1;}
-    | '(' type-name ')' cast-expression {$$ = create_binop_node(B_TYPECAST, $2, $4);}
+    /* | '(' type-name ')' cast-expression {$$ = create_binop_node(B_TYPECAST, $2, $4);} */
 
 multiplicative-expression:
     cast-expression {$$ = $1;}
@@ -267,35 +276,66 @@ constant-expression:
 expression-stmt:
     expression ';' {
         print_ast_tree($1);
-        // free_ast_tree($1);
         $$ = NULL;
     }
 
 /* 6.7 DECLARATORS */
 
 declaration:
-    declaration-specifiers declarator-list ';'
-    | declaration-specifiers ';'
+    declaration-specifiers declarator-list ';' {
+        if declarator-list
+        ast_node *current_declarator_comma_node = $2; // always B_COMMA node
+        while (current_declarator_comma_node->val.binop.left) {
+            ast_node *current_declarator = current_declarator_comma_node->val.binop.right;
+            while (current_declarator->node_type != AST_IDENT) {
+                switch (current_declarator->node_type) {
+                    case AST_UNOP:
+                        current_declarator = current_declarator->val.unop.center;
+                        break;
+                    case AST_TYPE_MOD:
+                        current_declarator = current_declarator->val.type_mod.next;
+                        break;
+                    default:
+                        yyerror("unknown ast node encountered while traversing declarator list");
+                }
+            }
+            enum SYMBOL_SCOPE CURRENT_SYMBOL_SCOPE = 0;
+            switch (CURRENT_SCOPE->scope) {
+                case TABLE_GLOBAL:
+                    CURRENT_SYMBOL_SCOPE = SYM_GLOBAL;
+                    if (CURRENT_STORAGE_CLASS == SC_AUTO || CURRENT_STORAGE_CLASS == SC_REGISTER) {
+                        yyerror("storage class not allowed in current scope");
+                    } else if (!CURRENT_STORAGE_CLASS) {
+                        CURRENT_STORAGE_CLASS = SC_EXTERN_IMPLICIT;
+                    }
+                    break;
+                case TABLE_FUNCTION;
+                    CURRENT_SYMBOL_SCOPE = CURRENT_STORAGE_CLASS ? SC_AUTO : CURRENT_STORAGE_CLASS;
+                    break;
+                case TABLE_BLOCK;
+                    CURRENT_SYMBOL_SCOPE = CURRENT_STORAGE_CLASS ? SC_AUTO : CURRENT_STORAGE_CLASS;
+                    break;
+                default:
+                    yyerror("unknown storage class encountered while traversing declarator list");
+                    break;
+            }
+            struct symbol_table_entry_ll_node *node = insert_symbol_var(current_declarator->val.ident.ident_name, CURRENT_SYMBOL_SCOPE, CURRENT_STORAGE_CLASS);
+            current_declarator_comma_node = current_declarator_comma_node->val.binop.left;
+        }
+    }
 
 declaration-specifiers:
-    storage-class-specifier declaration-specifiers
-    | storage-class-specifier
-    | type-specifier declaration-specifiers
-    | type-specifier
+    storage-class-specifier declaration-specifiers {$$ = NULL;}
+    | storage-class-specifier {$$ = NULL;}
+    | type-specifier declaration-specifiers {$$ = NULL;}
+    | type-specifier {$$ = NULL;}
 
 declarator-list:
-    declarator {$$ = $1;}
+    declarator {$$ = create_binop_node(B_COMMA, NULL, $1);}
     | declarator-list ',' declarator {$$ = create_binop_node(B_COMMA, $1, $3);}
 
 storage-class-specifier:
-    TYPEDEF {
-        if (CURRENT_STORAGE_CLASS) {
-            yyerror("conflicting storage classes");
-        }
-        CURRENT_STORAGE_CLASS = SC_REGISTER;
-        $$ = NULL;
-    }
-    | EXTERN {
+    EXTERN {
         if (CURRENT_STORAGE_CLASS) {
             yyerror("conflicting storage classes");
         }
@@ -323,10 +363,6 @@ storage-class-specifier:
         CURRENT_STORAGE_CLASS = SC_REGISTER;
         $$ = NULL;
     }
-
-type-specifier-list:
-    type-specifier-list {$$ = NULL;}
-    | type-specifier-list type-specifier {$$ = NULL;}
 
 type-specifier:
     CHAR {
@@ -427,15 +463,32 @@ type-specifier:
     }
 
 declarator:
-    pointer direct-declarator
-    | direct-declarator
+    pointer direct-declarator {
+        ast_node *tail = $1;
+        while (tail->val.type_mod.next) {
+            tail = tail->val.type_mod.next;
+        }
+        tail->val.type_mod.next = $2;
+        $$ = $1;
+    }
+    | direct-declarator {$$ = $1;}
 
 direct-declarator:
-    IDENT {$$ = $1;}
-    | '(' declarator ')'
-    | direct-declarator '[' NUMLIT ']'
-    | direct-declarator '[' ']'
-    | direct-declarator '(' ')'
+    ident-expr {$$ = $1;}
+    | '(' declarator ')' {$$ = $2;}
+    | direct-declarator '[' numlit-expr ']' {
+        int array_size = $3->val.numlit.val.int_val;
+        free($3);
+        ast_node *node = create_type_modifier_node(CONSTANT_SIZED_ARRAY, array_size);
+        node->val.type_mod.next = $1;
+        $$ = node;
+    }
+    | direct-declarator '[' ']' {
+        ast_node *node = create_type_modifier_node(UNSIZED_ARRAY, 0);
+        node->val.type_mod.next = $1;
+        $$ = node;
+    }
+    | direct-declarator '(' ')' {$$ = create_unop_node(U_FUNCTION_TYPE, $1);}
 
 pointer:
     '*' {$$ = create_type_modifier_node(POINTER, 0);}
@@ -445,7 +498,7 @@ pointer:
         $$ = node;
     }
 
-type-name:
+/* type-name:
     type-specifier-list abstract-declarator
     | type-specifier-list
 
@@ -461,7 +514,7 @@ direct-abstract-declarator:
     | '[' assignment-expression ']'
     | '[' ']'
     | direct-abstract-declarator '(' ')'
-    | '(' ')'
+    | '(' ')' */
 
 %%
 

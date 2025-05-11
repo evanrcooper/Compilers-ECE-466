@@ -27,6 +27,7 @@ enum unop_type { // op1 id1
     U_DEREF, // *
     U_SIZEOF_TYPENAME, // sizeof(type-name)
     U_SIZEOF_EXPRESSION, // sizeof(expression)
+    U_FUNCTION_TYPE, // function type with return type
 };
 
 enum binop_type { // id1 op1 id2
@@ -63,7 +64,6 @@ enum binop_type { // id1 op1 id2
     B_STRUCT_OFFSET, // a.b
     B_INDSEL, // a->b
     B_TYPECAST, // (type) ident
-    B_FUNCTION_TYPE,
     B_FUNCTION_CALL,
 };
 
@@ -112,7 +112,6 @@ enum storage_class {
     SC_EXTERN_EXPLICIT = 1,
     SC_EXTERN_IMPLICIT,
     SC_STATIC,
-    SC_TYPEDEF,
     SC_AUTO,
     SC_REGISTER,
 };
