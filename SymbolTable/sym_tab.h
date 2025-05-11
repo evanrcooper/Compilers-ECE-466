@@ -38,28 +38,6 @@ enum TABLE_SCOPE {
     TABLE_PROTOTYPE,
 };
 
-enum STORAGE_CLASS {
-    CLASS_EXTERN_EXPLICIT = 1,
-    CLASS_EXTERN_IMPLICIT,
-    CLASS_STATIC,
-    CLASSDEF,
-    CLASS_AUTO,
-    CLASS_REGISTER,
-};
-
-enum TYPE_SPECIFIERS {
-    TYPE_INT = 1,
-    TYPE_CHAR,
-    TYPE_VOID,
-    TYPE_FLOAT,
-    TYPE_DOUBLE,
-    TYPE_STRUCT,
-};
-
-enum ADDRESSING_TYPE {
-    EBP_OFFSET = 1,
-};
-
 struct symbol_table_entry_ll_node {
     enum SYMBOL_ROLE role;
     char *name;
@@ -71,7 +49,7 @@ struct symbol_table_entry_ll_node {
     union {
         struct {
             char is_defined;
-            enum STORAGE_CLASS storage;
+            enum storage_class storage;
             ast_node *type;
             int relative_address;
         } variable;
@@ -101,7 +79,7 @@ void init_global_table();
 struct symbol_table_entry_ll_node *create_new_blank_entry();
 struct symbol_table_dll_node *new_scope(enum TABLE_SCOPE scope);
 int exit_scope();
-void insert_symbol_var(char *name, enum SYMBOL_SCOPE scope, enum STORAGE_CLASS storage);
+void insert_symbol_var(char *name, enum SYMBOL_SCOPE scope, enum storage_class storage);
 void insert_symbol_fn(char *name, enum SYMBOL_SCOPE scope);
 void insert_symbol_lab(char *name, enum SYMBOL_SCOPE scope);
 void print_indents(int indents);

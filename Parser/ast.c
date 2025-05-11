@@ -1,6 +1,6 @@
 #include "ast.h"
 
-char *unop_to_char(enum unop_type type) {
+char *unop_to_str(enum unop_type type) {
     char *ret_str;
     char *msg;
     switch (type) {
@@ -33,6 +33,58 @@ char *unop_to_char(enum unop_type type) {
             break;
         case U_POST_MINUSMINUS:
             msg = "i--";
+            break;
+        case U_SIZEOF_TYPENAME:
+            msg = "SIZEOF(type-name)";
+            break;
+        case U_SIZEOF_EXPRESSION:
+            msg = "SIZEOF expression";
+            break;
+        default:
+            msg = "N/A";
+            break;
+    }
+    ret_str = malloc(strlen(msg) + 1);
+    strcpy(ret_str, msg);
+    return ret_str;
+}
+
+char *primitive_type_to_str(enum primitive_type type) {
+    char *ret_str;
+    char *msg;
+    switch (type) {
+        case TYPE_UNSIGNED_LONG_LONG:
+            msg = "UNSIGNED LONG LONG";
+            break;
+        case TYPE_SIGNED_LONG_LONG:
+            msg = "SIGNED LONG LONG";
+            break;
+        case TYPE_UNSIGNED_LONG:
+            msg = "UNSIGNED LONG";
+            break;
+        case TYPE_SIGNED_LONG:
+            msg = "SIGNED LONG";
+            break;
+        case TYPE_UNSIGNED_INT:
+            msg = "UNSIGNED INT";
+            break;
+        case TYPE_SIGNED_INT:
+            msg = "SIGNED INT";
+            break;
+        case TYPE_UNSIGNED_SHORT:
+            msg = "UNSIGNED SHORT";
+            break;
+        case TYPE_SIGNED_SHORT:
+            msg = "SIGNED SHORT";
+            break;
+        case TYPE_UNSIGNED_CHAR:
+            msg = "UNSIGNED CHAR";
+            break;
+        case TYPE_SIGNED_CHAR:
+            msg = "SIGNED CHAR";
+            break;
+        case TYPE_VOID:
+            msg = "VOID";
             break;
         default:
             msg = "N/A";
@@ -143,6 +195,9 @@ char *binop_to_str(enum binop_type type) {
         case B_COMMA:
             msg = ", (ASSIGN LIST)";
             break;
+        case B_TYPECAST:
+            msg = "TYPE CAST";
+            break;
         default:
             msg = "N/A";
             break;
@@ -152,7 +207,7 @@ char *binop_to_str(enum binop_type type) {
     return ret_str;
 }
 
-char *triop_to_char(enum triop_type type) {
+char *triop_to_str(enum triop_type type) {
     char *ret_str;
     char *msg;
     switch (type) {
@@ -200,6 +255,9 @@ void print_ast_tree(ast_node *root) {
 }
 
 void print_ast_node(int depth, ast_node *node) {
+    if (!node) {
+        return;
+    }
     char *op;
     for (int i = 0; i < depth; i++) {
         printf("-- ");
@@ -227,7 +285,7 @@ void print_ast_node(int depth, ast_node *node) {
             printf("IDENT: %s\n", node->val.ident.ident_name);
             break;
         case AST_UNOP:
-            op = unop_to_char(node->val.unop.op);
+            op = unop_to_str(node->val.unop.op);
             printf("UNOP: %s\n", op);
             free(op);
             print_ast_node(depth + 1, node->val.unop.center);
@@ -240,15 +298,35 @@ void print_ast_node(int depth, ast_node *node) {
             print_ast_node(depth + 1, node->val.binop.right);
             break;
         case AST_TRIOP:
-            op = triop_to_char(node->val.triop.op);
+            op = triop_to_str(node->val.triop.op);
             printf("TRIOP: %s\n", op);
             free(op);
             print_ast_node(depth + 1, node->val.triop.left);
             print_ast_node(depth + 1, node->val.triop.center);
             print_ast_node(depth + 1, node->val.triop.right);
             break;
+        case AST_PRIMITIVE_TYPE:
+            op = primitive_type_to_str(node->val.primitive_type.type);
+            printf("TYPE: %s\n", op);
+            free(op);
+            print_ast_node(depth + 1, node->val.primitive_type.next);
+        case AST_TYPE_MOD:
+            switch (node->val.type_mod.modifier) {
+                case POINTER:
+                    printf("POINTER TO\n");
+                    break;
+                case UNSIZED_ARRAY:
+                    printf("ARRAY OF UNSPECIFIED SIZE OF TYPE\n");
+                    break;
+                case CONSTANT_SIZED_ARRAY:
+                    printf("ARRAY OF SIZE [%d] OF TYPE\n", node->val.type_mod.array_size);
+                    break;
+                default:
+                    break;
+            }
+            print_ast_node(depth + 1, node->val.type_mod.next);
         default:
-            printf("\rERROR\n");
+            printf("\rERROR (%d)\n", node->node_type);
             break;
     }
 }
@@ -322,4 +400,33 @@ void print_char(char c) {
         printf("\\x%02x", c);
     }
     printf("\'\n");
+}
+
+void reset_current_type_builder() {
+    CURRENT_TYPE_BUILDER.is_unsigned = 0;
+    CURRENT_TYPE_BUILDER.is_signed = 0;
+    CURRENT_TYPE_BUILDER.is_short = 0;
+    CURRENT_TYPE_BUILDER.is_long = 0;
+    CURRENT_TYPE_BUILDER.is_long_long = 0;
+    CURRENT_TYPE_BUILDER.is_char = 0;
+    CURRENT_TYPE_BUILDER.is_int = 0;
+    CURRENT_TYPE_BUILDER.is_void = 0;
+    return;
+}
+
+
+enum primitive_type get_primitive_type(struct type_builder built_type) {
+    if (built_type.is_void) {
+        return TYPE_VOID;
+    } else if (built_type.is_char) {
+        return built_type.is_unsigned ? TYPE_UNSIGNED_CHAR : TYPE_SIGNED_CHAR;
+    } else if (built_type.is_long_long) {
+        return built_type.is_unsigned ? TYPE_UNSIGNED_LONG_LONG : TYPE_SIGNED_LONG_LONG;
+    } else if (built_type.is_long) {
+        return built_type.is_unsigned ? TYPE_UNSIGNED_LONG : TYPE_SIGNED_LONG;
+    } else if (built_type.is_short) {
+        return built_type.is_unsigned ? TYPE_UNSIGNED_SHORT : TYPE_SIGNED_SHORT;
+    } 
+    // otherwise is type long, int, or unspecified type
+    return built_type.is_unsigned ? TYPE_UNSIGNED_INT : TYPE_SIGNED_INT;
 }

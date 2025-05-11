@@ -45,7 +45,7 @@ int exit_scope() {
 // RESPONSIBILITY OF CALLER TO ASSERT THAT SYMBOL WITH 
 // THE NAME PROVIDED IS NOT ALLREADY IN DEEPEST SCOPE 
 
-void insert_symbol_var(char *name, enum SYMBOL_SCOPE scope, enum STORAGE_CLASS storage) {
+void insert_symbol_var(char *name, enum SYMBOL_SCOPE scope, enum storage_class storage) {
     struct symbol_table_entry_ll_node *node = create_new_blank_entry();
     node->name = name;
     node->role = SYM_VAR;

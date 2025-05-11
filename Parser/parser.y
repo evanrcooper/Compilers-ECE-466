@@ -3,6 +3,8 @@
     int yylex(void);
     extern FILE *yyin;
     struct symbol_table_dll_node *CURRENT_SCOPE;
+    struct type_builder CURRENT_TYPE_BUILDER = {0};
+    int CURRENT_STORAGE_CLASS = 0;
 %}
 
 %code requires {
@@ -95,6 +97,10 @@
 %type <node> ident-expr
 %type <node> pointer
 %type <node> direct-declarator
+%type <node> declarator-list
+%type <node> type-specifier
+%type <node> type-specifier-list
+%type <node> storage-class-specifier
 
 %%
 
@@ -177,12 +183,12 @@ unary-expression:
     | '-' cast-expression {$$ = create_unop_node(U_NEG, $2);}
     | '~' cast-expression {$$ = create_unop_node(U_BIT_NOT, $2);}
     | '!' cast-expression {$$ = create_unop_node(U_NOT, $2);}
-    /* | SIZEOF unary-expression */
-    /* | SIZEOF '(' type-name ')' */
+    | SIZEOF unary-expression {$$ = create_unop_node(U_SIZEOF_EXPRESSION, $2);}
+    | SIZEOF '(' type-name ')' {$$ = create_unop_node(U_SIZEOF_TYPENAME, $3);}
 
 cast-expression:
     unary-expression {$$ = $1;}
-    /* | '(' type-name ')' cast-expression */
+    | '(' type-name ')' cast-expression {$$ = create_binop_node(B_TYPECAST, $2, $4);}
 
 multiplicative-expression:
     cast-expression {$$ = $1;}
@@ -278,32 +284,147 @@ declaration-specifiers:
     | type-specifier
 
 declarator-list:
-    declarator
-    | declarator-list ',' declarator
+    declarator {$$ = $1;}
+    | declarator-list ',' declarator {$$ = create_binop_node(B_COMMA, $1, $3);}
 
 storage-class-specifier:
-    TYPEDEF
-    | EXTERN
-    | STATIC
-    | AUTO
-    | REGISTER
+    TYPEDEF {
+        if (CURRENT_STORAGE_CLASS) {
+            yyerror("conflicting storage classes");
+        }
+        CURRENT_STORAGE_CLASS = SC_REGISTER;
+        $$ = NULL;
+    }
+    | EXTERN {
+        if (CURRENT_STORAGE_CLASS) {
+            yyerror("conflicting storage classes");
+        }
+        CURRENT_STORAGE_CLASS = SC_EXTERN_EXPLICIT;
+        $$ = NULL;
+    }
+    | STATIC {
+        if (CURRENT_STORAGE_CLASS) {
+            yyerror("conflicting storage classes");
+        }
+        CURRENT_STORAGE_CLASS = SC_REGISTER;
+        $$ = NULL;
+    }
+    | AUTO {
+        if (CURRENT_STORAGE_CLASS) {
+            yyerror("conflicting storage classes");
+        }
+        CURRENT_STORAGE_CLASS = SC_AUTO;
+        $$ = NULL;
+    }
+    | REGISTER {
+        if (CURRENT_STORAGE_CLASS) {
+            yyerror("conflicting storage classes");
+        }
+        CURRENT_STORAGE_CLASS = SC_REGISTER;
+        $$ = NULL;
+    }
 
-type-name
+type-specifier-list:
+    type-specifier-list {$$ = NULL;}
+    | type-specifier-list type-specifier {$$ = NULL;}
 
 type-specifier:
-    | VOID
-    | CHAR
-    | SHORT
-    | INT
-    | LONG
-    | FLOAT
-    | DOUBLE
-    | SIGNED
-    | UNSIGNED
-
-specifier-qualifier-list:
-    type-specifier specifier-qualifier-list
-    | type-specifier
+    CHAR {
+        if (CURRENT_TYPE_BUILDER.is_void) {
+            yyerror("conflict between 'char' and 'void' specifiers");
+        } else if (CURRENT_TYPE_BUILDER.is_char) {
+            yyerror("too many 'char' specifiers");
+        } else if (CURRENT_TYPE_BUILDER.is_int) {
+            yyerror("conflict between 'char' and 'int' specifiers");
+        }
+        CURRENT_TYPE_BUILDER.is_char = 1;
+        $$ = NULL;
+    }
+    | INT {
+        if (CURRENT_TYPE_BUILDER.is_void) {
+            yyerror("conflict between 'int' and 'void' specifiers");
+        } else if (CURRENT_TYPE_BUILDER.is_int) {
+            yyerror("too many 'int' specifiers");
+        } else if (CURRENT_TYPE_BUILDER.is_char) {
+            yyerror("conflict between 'int' and 'char' specifiers");
+        }
+        CURRENT_TYPE_BUILDER.is_int = 1;
+        $$ = NULL;
+    }
+    | SHORT {
+        if (CURRENT_TYPE_BUILDER.is_void) {
+            yyerror("conflict between 'short' and 'void' specifiers");
+        } else if (CURRENT_TYPE_BUILDER.is_long_long) {
+            yyerror("conflict between 'short' and 'long long' specifiers");
+        } else if (CURRENT_TYPE_BUILDER.is_short) {
+            yyerror("too many 'short' specifiers");
+        } else if (CURRENT_TYPE_BUILDER.is_char) {
+            yyerror("conflict between 'short' and 'char' specifiers");
+        } else {
+            CURRENT_TYPE_BUILDER.is_short = 1;
+        }
+        $$ = NULL;
+    }
+    | LONG {
+        if (CURRENT_TYPE_BUILDER.is_void) {
+            yyerror("conflict between 'long' and 'void' specifiers");
+        } else if (CURRENT_TYPE_BUILDER.is_long_long) {
+            yyerror("too many 'long' specifiers");
+        } else if (CURRENT_TYPE_BUILDER.is_short) {
+            yyerror("conflict between 'long' and 'short' specifiers");
+        } else if (CURRENT_TYPE_BUILDER.is_long) {
+            CURRENT_TYPE_BUILDER.is_long_long = 1;
+            CURRENT_TYPE_BUILDER.is_long = 0;
+        } else if (CURRENT_TYPE_BUILDER.is_char) {
+            yyerror("conflict between 'long' and 'char' specifiers");
+        } else {
+            CURRENT_TYPE_BUILDER.is_long = 1;
+        }
+        $$ = NULL;
+    }
+    | SIGNED {
+        if (CURRENT_TYPE_BUILDER.is_void) {
+            yyerror("conflict between 'signed' and 'void' specifiers");
+        } else if (CURRENT_TYPE_BUILDER.is_unsigned) {
+            yyerror("conflict between 'signed' and 'unsigned' specifiers");
+        } else if (CURRENT_TYPE_BUILDER.is_signed) {
+            yyerror("too many 'signed' specifiers");
+        } else {
+            CURRENT_TYPE_BUILDER.is_signed = 1;
+        }
+        $$ = NULL;
+    }
+    | UNSIGNED {
+        if (CURRENT_TYPE_BUILDER.is_void) {
+            yyerror("conflict between 'unsigned' and 'void' specifiers");
+        } else if (CURRENT_TYPE_BUILDER.is_signed) {
+            yyerror("conflict between 'unsigned' and 'signed' specifiers");
+        } else if (CURRENT_TYPE_BUILDER.is_unsigned) {
+            yyerror("too many 'unsigned' specifiers");
+        } else {
+            CURRENT_TYPE_BUILDER.is_unsigned = 1;
+        }
+        $$ = NULL;
+    }
+    | VOID {
+        if (CURRENT_TYPE_BUILDER.is_signed) {
+            yyerror("conflict between 'void' and 'signed' specifiers");
+        } else if (CURRENT_TYPE_BUILDER.is_unsigned) {
+            yyerror("conflict between 'void' and 'unsigned' specifiers");
+        } else if (CURRENT_TYPE_BUILDER.is_short) {
+            yyerror("conflict between 'void' and 'short' specifiers");
+        } else if (CURRENT_TYPE_BUILDER.is_long) {
+            yyerror("conflict between 'void' and 'long' specifiers");
+        } else if (CURRENT_TYPE_BUILDER.is_long_long) {
+            yyerror("conflict between 'void' and 'long long' specifiers");
+        } else if (CURRENT_TYPE_BUILDER.is_char) {
+            yyerror("conflict between 'void' and 'char' specifiers");
+        } else if (CURRENT_TYPE_BUILDER.is_int) {
+            yyerror("conflict between 'void' and 'int' specifiers");
+        }
+        CURRENT_TYPE_BUILDER.is_void = 1;
+        $$ = NULL;
+    }
 
 declarator:
     pointer direct-declarator
@@ -325,8 +446,8 @@ pointer:
     }
 
 type-name:
-    specifier-qualifier-list abstract-declarator
-    | specifier-qualifier-list
+    type-specifier-list abstract-declarator
+    | type-specifier-list
 
 abstract-declarator:
     pointer

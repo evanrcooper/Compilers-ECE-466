@@ -25,6 +25,8 @@ enum unop_type { // op1 id1
     U_POST_MINUSMINUS, // x--
     U_ADDRESSOF, // &
     U_DEREF, // *
+    U_SIZEOF_TYPENAME, // sizeof(type-name)
+    U_SIZEOF_EXPRESSION, // sizeof(expression)
 };
 
 enum binop_type { // id1 op1 id2
@@ -60,6 +62,9 @@ enum binop_type { // id1 op1 id2
     B_COMMA, // expr, expr
     B_STRUCT_OFFSET, // a.b
     B_INDSEL, // a->b
+    B_TYPECAST, // (type) ident
+    B_FUNCTION_TYPE,
+    B_FUNCTION_CALL,
 };
 
 enum triop_type { // id1 op1 id2 op2 id3
@@ -86,18 +91,30 @@ enum ast_node_type {
 enum primitive_type {
     TYPE_UNSIGNED_LONG_LONG = 1, // 64 bit usigned value
     TYPE_SIGNED_LONG_LONG, // 64 bit signed value
-    TYPE_UNSIGNED_INT, // 32 bit usigned value
-    TYPE_SIGNED_INT, // 32 bit signed value
+    TYPE_UNSIGNED_LONG, // 32 bit usigned value (long)
+    TYPE_SIGNED_LONG, // 32 bit signed value (long)
+    TYPE_UNSIGNED_INT, // 32 bit signed value (int)
+    TYPE_SIGNED_INT, // 32 bit signed value (int)
     TYPE_UNSIGNED_SHORT, // 16 bit usigned value
     TYPE_SIGNED_SHORT, // 16 bit signed value
     TYPE_UNSIGNED_CHAR, // 8 bit unsigned value
     TYPE_SIGNED_CHAR, // 8 bit signed value
+    TYPE_VOID, // void
 };
 
 enum type_modifier {
     POINTER = 1, // *
     CONSTANT_SIZED_ARRAY, // [1]
     UNSIZED_ARRAY, // []
+};
+
+enum storage_class {
+    SC_EXTERN_EXPLICIT = 1,
+    SC_EXTERN_IMPLICIT,
+    SC_STATIC,
+    SC_TYPEDEF,
+    SC_AUTO,
+    SC_REGISTER,
 };
 
 struct ast_node_unop {
@@ -167,9 +184,21 @@ typedef struct ast_node_struct {
     } val;
 } ast_node;
 
-char *unop_to_char(enum unop_type type);
+struct type_builder {
+    char is_unsigned;
+    char is_signed;
+    char is_short;
+    char is_long;
+    char is_long_long;
+    char is_char;
+    char is_int;
+    char is_void;
+};
+
+char *unop_to_str(enum unop_type type);
 char *binop_to_str(enum binop_type type);
-char *triop_to_char(enum triop_type type);
+char *triop_to_str(enum triop_type type);
+char *primitive_type_to_str(enum primitive_type type);
 
 void print_ast_node(int depth, ast_node *node);
 void print_ast_tree(ast_node *root);
@@ -193,5 +222,10 @@ int is_printable(char c);
 void print_string(char *str, int len);
 
 void print_char(char c);
+
+enum primitive_type get_primitive_type(struct type_builder built_type);
+
+extern struct type_builder CURRENT_TYPE_BUILDER;
+void reset_current_type_builder();
 
 #endif // AST_H
