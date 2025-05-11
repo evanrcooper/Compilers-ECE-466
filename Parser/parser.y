@@ -283,7 +283,9 @@ expression-stmt:
 
 declaration:
     declaration-specifiers declarator-list ';' {
-        if declarator-list
+        if (!$2) {
+            yyerror("no declarator provided");
+        }
         ast_node *current_declarator_comma_node = $2; // always B_COMMA node
         while (current_declarator_comma_node->val.binop.left) {
             ast_node *current_declarator = current_declarator_comma_node->val.binop.right;
@@ -299,7 +301,7 @@ declaration:
                         yyerror("unknown ast node encountered while traversing declarator list");
                 }
             }
-            enum SYMBOL_SCOPE CURRENT_SYMBOL_SCOPE = 0;
+            int CURRENT_SYMBOL_SCOPE = 0;
             switch (CURRENT_SCOPE->scope) {
                 case TABLE_GLOBAL:
                     CURRENT_SYMBOL_SCOPE = SYM_GLOBAL;
@@ -309,17 +311,17 @@ declaration:
                         CURRENT_STORAGE_CLASS = SC_EXTERN_IMPLICIT;
                     }
                     break;
-                case TABLE_FUNCTION;
+                case TABLE_FUNCTION:
                     CURRENT_SYMBOL_SCOPE = CURRENT_STORAGE_CLASS ? SC_AUTO : CURRENT_STORAGE_CLASS;
                     break;
-                case TABLE_BLOCK;
+                case TABLE_BLOCK:
                     CURRENT_SYMBOL_SCOPE = CURRENT_STORAGE_CLASS ? SC_AUTO : CURRENT_STORAGE_CLASS;
                     break;
                 default:
                     yyerror("unknown storage class encountered while traversing declarator list");
                     break;
             }
-            struct symbol_table_entry_ll_node *node = insert_symbol_var(current_declarator->val.ident.ident_name, CURRENT_SYMBOL_SCOPE, CURRENT_STORAGE_CLASS);
+            insert_symbol_var(current_declarator->val.ident.ident_name, CURRENT_SYMBOL_SCOPE, CURRENT_STORAGE_CLASS);
             current_declarator_comma_node = current_declarator_comma_node->val.binop.left;
         }
     }
@@ -494,7 +496,7 @@ pointer:
     '*' {$$ = create_type_modifier_node(POINTER, 0);}
     | '*' pointer {
         ast_node *node = create_type_modifier_node(POINTER, 0);
-        ast_node->val.type_mod.next = $2;
+        node->val.type_mod.next = $2;
         $$ = node;
     }
 
