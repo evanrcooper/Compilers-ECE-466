@@ -114,8 +114,7 @@
 
 program:
     /* empty */
-    | program expression-stmt
-    | program declaration
+    | program translation-unit
 
 ident-expr:
     IDENT {
@@ -272,12 +271,6 @@ expression:
 /* 6.6 CONSTANT EXPRESSIONS */
 constant-expression:
     conditional-expression {$$ = $1;}
-
-expression-stmt:
-    expression ';' {
-        print_ast_tree($1);
-        $$ = NULL;
-    }
 
 /* 6.7 DECLARATORS */
 
@@ -517,6 +510,76 @@ direct-abstract-declarator:
     | '[' ']'
     | direct-abstract-declarator '(' ')'
     | '(' ')' */
+
+/* 6.8 STATEMENTS AND BLOCKS */
+
+statement:
+    labeled-statement
+    | compound-statement
+    | expression-statement
+    | selection-statement
+    | iteration-statement
+    | jump-statement
+
+labeled-statement:
+    ident-expr ':' statement
+    | CASE constant-expression ':' statement
+    | DEFAULT ':' statement
+
+compound-statement:
+    '{' block-item-list '}'
+    '{' '}'
+
+block-item-list:
+    block-item
+    | block-item-list block-item
+
+block-item:
+    declaration
+    | statement
+
+expression-statement:
+    /* empty */
+    | expression
+
+selection-statement:
+    IF '(' expression ')' statement
+    | IF '(' expression ')' statement ELSE statement
+    | SWITCH '(' expression ')' statement
+
+expression-opt:
+    /* empty */
+    | expression
+
+iteration-statement:
+    WHILE '(' expression ')' statement
+    | DO statement WHILE '(' expression ')' ';'
+    | FOR '(' expression-opt ';' expression-opt ';' expression-opt ')' statement
+    | FOR '(' declaration expression-opt ';' expression-opt ')' statement
+
+jump-statement:
+    GOTO ident-expr ';'
+    CONTINUE ';'
+    BREAK ';'
+    RETURN expression-opt ';'
+
+/* 6.9 EXTERNAL DEFINITIONS */
+
+translation-unit:
+    external-declaration
+    | translation-unit external-declaration
+
+external-declaration:
+    function-definition
+    | declaration
+
+function-definition:
+    declaration-specifiers declarator declaration-list compound-statement
+    | declaration-specifiers declarator compound-statement
+
+declaration-list:
+    declaration
+    | declaration-list declaration
 
 %%
 
