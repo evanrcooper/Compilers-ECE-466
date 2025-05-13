@@ -104,6 +104,10 @@
 %type <node> declarator
 %type <node> declaration-specifiers
 %type <node> declaration
+%type <node> type-specifier-list
+%type <node> expression-opt
+%type <node> direct-abstract-declarator
+%type <node> abstract-declarator
 
 %%
 
@@ -322,8 +326,8 @@ declaration:
 declaration-specifiers:
     storage-class-specifier declaration-specifiers {$$ = NULL;}
     | storage-class-specifier {$$ = NULL;}
-    | type-specifier declaration-specifiers {$$ = NULL;}
-    | type-specifier {$$ = NULL;}
+    | type-specifier-list declaration-specifiers {$$ = NULL;}
+    | type-specifier-list {$$ = NULL;}
 
 declarator-list:
     declarator {$$ = create_binop_node(B_COMMA, NULL, $1);}
@@ -493,23 +497,36 @@ pointer:
         $$ = node;
     }
 
-/* type-name:
+type-specifier-list:
+    type-specifier {$$ = NULL;}
+    | type-specifier type-specifier-list {$$ = NULL;}
+
+type-name:
     type-specifier-list abstract-declarator
     | type-specifier-list
 
 abstract-declarator:
-    pointer
-    | pointer direct-abstract-declarator
-    | direct-abstract-declarator
+    pointer {$$ = $1;}
+    | pointer direct-abstract-declarator {
+        ast_node *tail = $1;
+        while (tail->val.type_mod.next) {
+            tail = tail->val.type_mod.next;
+        }
+        tail->val.type_mod.next = $2;
+        $$ = $1;
+    }
+    | direct-abstract-declarator {$$ = $1;}
 
 direct-abstract-declarator:
-    '(' abstract-declarator ')'
-    | direct-abstract-declarator '[' assignment-expression ']'
-    | direct-abstract-declarator '[' ']'
-    | '[' assignment-expression ']'
-    | '[' ']'
-    | direct-abstract-declarator '(' ')'
-    | '(' ')' */
+    '(' abstract-declarator ')' {$$ = $2;}
+    | direct-abstract-declarator '[' ']' {
+        ast_node *node = create_type_modifier_node(UNSIZED_ARRAY, 0);
+        node->val.type_mod.next = $1;
+        $$ = node;
+    }
+    | '[' ']' {$$ = create_type_modifier_node(UNSIZED_ARRAY, 0)}
+    | direct-abstract-declarator '(' ')' {create_unop_node(U_FUNCTION_TYPE, $1);}
+    | '(' ')' {$$ = create_unop_node(U_FUNCTION_TYPE, create_primitive_type_node(TYPE_VOID));}
 
 /* 6.8 STATEMENTS AND BLOCKS */
 
@@ -548,8 +565,8 @@ selection-statement:
     | SWITCH '(' expression ')' statement
 
 expression-opt:
-    /* empty */
-    | expression
+    /* empty */ {$$ = NULL;}
+    | expression {$$ = $1;}
 
 iteration-statement:
     WHILE '(' expression ')' statement
