@@ -778,17 +778,18 @@ function-definition:
         if (!ident_node) {
             yyerror("function definition missing identifier");
         }
-
         ast_node *type = build_full_type_from_declarator($2, &CURRENT_TYPE_BUILDER);
-
         ast_node *node = calloc(1, sizeof(ast_node));
         node->node_type = AST_FUNCTION_DEF;
         node->val.fn_def.return_type = type;
-        node->val.fn_def.name = ident_node->val.ident.ident_name;
         node->val.fn_def.content = $3;
 
-        insert_symbol_fn(ident_node->val.ident.ident_name, SYM_GLOBAL);  // symbol table entry
+        struct symbol_table_entry_ll_node *fn_symbol = insert_symbol_fn(ident_node->val.ident.ident_name, SYM_GLOBAL);
 
+        ident_node->val.ident.symbol = fn_symbol;
+
+        fn_symbol->specs.function.return_type = type;
+        fn_symbol->specs.function.content = $3;
         $$ = node;
 
         reset_current_type_builder();

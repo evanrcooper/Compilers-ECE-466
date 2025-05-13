@@ -66,7 +66,6 @@ struct symbol_table_entry_ll_node* insert_symbol_fn(char *name, enum SYMBOL_SCOP
     /* node->specs.function.return_type = NULL; */
     // node->specs.function.content = NULL;
     /* node->specs.function.defined = 0; */
-    node->specs.function.context_table = new_scope(TABLE_FUNCTION);
     return node;
 }
 
@@ -184,10 +183,10 @@ void print_function(struct symbol_table_entry_ll_node *node, int indents) {
         printf("CONTENT: \n");
         print_ast_node(indents+1, node->specs.function.content);
     }
-    if (PRINT_FUNCTION_SYMBOL_TABLE) {
-        printf("SYMBOL_TABLE: \n");
-        print_symbol_table(node->specs.function.context_table, indents+1);
-    }
+    // if (PRINT_FUNCTION_SYMBOL_TABLE) {
+    //     printf("SYMBOL_TABLE: \n");
+    //     print_symbol_table(node->specs.function.context_table, indents+1);
+    // }
     return;
 }
 
@@ -292,16 +291,19 @@ ast_node* build_full_type_from_declarator(ast_node *declarator, struct type_buil
     ast_node *type = declarator;
 
     ast_node *tail = base_type;
-    while (type && (type->node_type == AST_TYPE_MOD || type->node_type == AST_UNOP)) {
+
+    while (type) {
         if (type->node_type == AST_TYPE_MOD) {
             type->val.type_mod.next = tail;
             tail = type;
+            type = type->val.type_mod.next;
         } else if (type->node_type == AST_UNOP && type->val.unop.op == U_FUNCTION_TYPE) {
             type->val.unop.center = tail;
             tail = type;
+            break;
+        } else {
+            break;
         }
-        type = type->val.type_mod.next;
     }
-
     return tail;
 }

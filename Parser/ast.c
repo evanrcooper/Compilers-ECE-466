@@ -388,8 +388,11 @@ void print_ast_node(int depth, ast_node *node) {
             printf("RETURN:\n");
             print_ast_node(depth + 1, node->val.return_statement.expression);
             break;
-        // case AST_FUNCTION_DEF:
-        //     break;
+        case AST_FUNCTION_DEF:
+            printf("FUNCTION DEFINITION:\n");
+            print_ast_node(depth + 1, node->val.fn_def.return_type);
+            print_ast_node(depth + 1, node->val.fn_def.content);
+            break;
         default:
             printf("\rERROR (%d)\n", node->node_type);
             break;
