@@ -227,6 +227,7 @@ struct ast_node_return {
 struct ast_node_function_defiinition {
     ast_node *return_type;
     ast_node *content;
+    char *name;
 };
 
 typedef struct ast_node_struct {
@@ -299,5 +300,7 @@ enum primitive_type get_primitive_type(struct type_builder built_type);
 
 extern struct type_builder CURRENT_TYPE_BUILDER;
 void reset_current_type_builder();
+
+ast_node *create_block_node(ast_node *statement);
 
 #endif // AST_H

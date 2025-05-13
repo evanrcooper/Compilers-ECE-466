@@ -286,3 +286,22 @@ struct symbol_table_entry_ll_node* find_symbol_in_table(char *name, struct symbo
 enum TABLE_SCOPE get_scope_type() {
     return CURRENT_SCOPE->scope;
 }
+
+ast_node* build_full_type_from_declarator(ast_node *declarator, struct type_builder *builder) {
+    ast_node *base_type = create_primitive_type_node(get_primitive_type(*builder));
+    ast_node *type = declarator;
+
+    ast_node *tail = base_type;
+    while (type && (type->node_type == AST_TYPE_MOD || type->node_type == AST_UNOP)) {
+        if (type->node_type == AST_TYPE_MOD) {
+            type->val.type_mod.next = tail;
+            tail = type;
+        } else if (type->node_type == AST_UNOP && type->val.unop.op == U_FUNCTION_TYPE) {
+            type->val.unop.center = tail;
+            tail = type;
+        }
+        type = type->val.type_mod.next;
+    }
+
+    return tail;
+}

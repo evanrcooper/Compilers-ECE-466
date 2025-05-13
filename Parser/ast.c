@@ -262,13 +262,15 @@ void print_ast_tree(ast_node *root) {
 }
 
 void print_ast_node(int depth, ast_node *node) {
-    if (!node) {
-        return;
-    }
     char *op;
     for (int i = 0; i < depth; i++) {
         printf("-- ");
     }
+    if (!node) {
+        printf("(null)\n");
+        return;
+    }
+    printf("[node_type=%d] ", node->node_type);
     switch (node->node_type) {
         case AST_NUMLIT:
             switch (node->val.numlit.type) {
@@ -289,7 +291,11 @@ void print_ast_node(int depth, ast_node *node) {
             print_string(node->val.strlit.val, node->val.strlit.len);
             break;
         case AST_IDENT:
-            printf("IDENT: %s\n", node->val.ident.ident_name);
+            if (node->val.ident.symbol) {
+                printf("IDENT: %s\n", node->val.ident.ident_name);
+            } else {
+                printf("-- (no symbol)\n");
+            }
             break;
         case AST_UNOP:
             op = unop_to_str(node->val.unop.op);
@@ -317,6 +323,7 @@ void print_ast_node(int depth, ast_node *node) {
             printf("TYPE: %s\n", op);
             free(op);
             print_ast_node(depth + 1, node->val.primitive_type.next);
+            break;
         case AST_TYPE_MOD:
             switch (node->val.type_mod.modifier) {
                 case POINTER:
@@ -332,6 +339,7 @@ void print_ast_node(int depth, ast_node *node) {
                     break;
             }
             print_ast_node(depth + 1, node->val.type_mod.next);
+            break;
         case AST_BLOCK:
             printf("BLOCK:\n");
             print_ast_node(depth + 1, node->val.block.statement);
@@ -349,10 +357,12 @@ void print_ast_node(int depth, ast_node *node) {
             print_ast_node(depth + 1, node->val.if_statement.expression);
             print_ast_node(depth + 1, node->val.if_statement.statement);
             print_ast_node(depth + 1, node->val.if_statement.else_statement);
+            break;
         case AST_WHILE:
             printf("WHILE:\n");
             print_ast_node(depth + 1, node->val.while_statement.expression);
             print_ast_node(depth + 1, node->val.while_statement.statement);
+            break;
         case AST_DO_WHILE:
             printf("DO WHILE:\n");
             print_ast_node(depth + 1, node->val.do_while_statement.expression);

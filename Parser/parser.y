@@ -34,6 +34,24 @@
 %token LOGAND LOGOR
 %token TIMESEQ PLUSEQ XOREQ MINUSEQ DIVEQ MODEQ SHLEQ SHREQ ANDEQ OREQ
 
+%token ELLIPSIS
+%token CASE
+%token CONST
+%token DEFAULT
+%token DOUBLE
+%token ENUM
+%token FLOAT
+%token INLINE
+%token RESTRICT
+%token STRUCT
+%token SWITCH
+%token TYPEDEF
+%token UNION
+%token VOLATILE
+%token _BOOL
+%token _COMPLEX
+%token _IMAGINARY
+
 %token AUTO
 %token BREAK
 %token CHAR
@@ -100,6 +118,9 @@
 %type <node> statement
 %type <node> type-name
 %type <node> selection-statement
+%type <node> compound-body
+%type <node> compound-start
+%type <node> program
 
 %%
 
@@ -110,15 +131,20 @@
 
 program:
     /* empty */
-    | program function-definition
-    | program statement
+    /* | program function-definition */
+    | program external-declaration {print_ast_tree($2);}
 
 ident-expr:
     IDENT {
         ast_node *ident_node = calloc(1, sizeof(ast_node));
         ident_node->node_type = AST_IDENT;
         ident_node->val.ident.ident_name = strdup(yylval.str_val);
-        /* ident_node->val.ident.symbol = 0; */
+        ident_node->val.ident.symbol = find_symbol_in_scope(ident_node->val.ident.ident_name, CURRENT_SCOPE);
+
+        if (!ident_node->val.ident.symbol) {
+            printf("Warning: unresolved identifier '%s'\n", ident_node->val.ident.ident_name);
+        }
+
         $$ = ident_node;
     }
 
@@ -163,12 +189,12 @@ postfix-expression:
     | postfix-expression '[' expression ']' {$$ = create_unop_node(U_DEREF, create_binop_node(B_PLUS, $1, $3));}
     | postfix-expression '(' ')' {
         if ($1->node_type != AST_IDENT) {
-            yyerror("Impossible Function Call")
+            yyerror("Impossible Function Call");
         }
         struct symbol_table_entry_ll_node *entry = find_symbol_in_scope($1->val.ident.ident_name, CURRENT_SCOPE);
         free($1);
         if (!entry) {
-            yyerror("Unresolved Function Call")
+            yyerror("Unresolved Function Call");
         }
         ast_node *node = calloc(1, sizeof(ast_node));
         node->node_type = AST_FUNCTION_CALL;
@@ -278,9 +304,13 @@ declaration:
         if (!$2) {
             yyerror("no declarator provided");
         }
-        ast_node *current_declarator_comma_node = $2; // always B_COMMA node
+
+        ast_node *current_declarator_comma_node = $2;
+
+        // Process all comma-separated declarators except the final one
         while (current_declarator_comma_node->val.binop.left) {
             ast_node *current_declarator = current_declarator_comma_node->val.binop.right;
+
             while (current_declarator->node_type != AST_IDENT) {
                 switch (current_declarator->node_type) {
                     case AST_UNOP:
@@ -290,33 +320,76 @@ declaration:
                         current_declarator = current_declarator->val.type_mod.next;
                         break;
                     default:
-                        yyerror("unknown ast node encountered while traversing declarator list");
+                        yyerror("unknown AST node in declarator traversal");
                 }
             }
+
             int CURRENT_SYMBOL_SCOPE = 0;
             switch (CURRENT_SCOPE->scope) {
                 case TABLE_GLOBAL:
                     CURRENT_SYMBOL_SCOPE = SYM_GLOBAL;
                     if (CURRENT_STORAGE_CLASS == SC_AUTO || CURRENT_STORAGE_CLASS == SC_REGISTER) {
-                        yyerror("storage class not allowed in current scope");
+                        yyerror("storage class not allowed in global scope");
                     } else if (!CURRENT_STORAGE_CLASS) {
                         CURRENT_STORAGE_CLASS = SC_EXTERN_IMPLICIT;
                     }
                     break;
                 case TABLE_FUNCTION:
-                    CURRENT_SYMBOL_SCOPE = CURRENT_STORAGE_CLASS ? SC_AUTO : CURRENT_STORAGE_CLASS;
-                    break;
                 case TABLE_BLOCK:
                     CURRENT_SYMBOL_SCOPE = CURRENT_STORAGE_CLASS ? SC_AUTO : CURRENT_STORAGE_CLASS;
                     break;
                 default:
-                    yyerror("unknown storage class encountered while traversing declarator list");
-                    break;
+                    yyerror("unrecognized table scope");
             }
-            insert_symbol_var(current_declarator->val.ident.ident_name, CURRENT_SYMBOL_SCOPE, CURRENT_STORAGE_CLASS);
+
+            struct symbol_table_entry_ll_node *node = insert_symbol_var(current_declarator->val.ident.ident_name, CURRENT_SYMBOL_SCOPE, CURRENT_STORAGE_CLASS);
+            node->specs.variable.is_defined = 1;
+            node->specs.variable.type = build_full_type_from_declarator(current_declarator, &CURRENT_TYPE_BUILDER);
+
             current_declarator_comma_node = current_declarator_comma_node->val.binop.left;
         }
+
+        // Handle the final (leftmost) declarator (left == NULL)
+        ast_node *first_declarator = current_declarator_comma_node->val.binop.right;
+        while (first_declarator->node_type != AST_IDENT) {
+            switch (first_declarator->node_type) {
+                case AST_UNOP:
+                    first_declarator = first_declarator->val.unop.center;
+                    break;
+                case AST_TYPE_MOD:
+                    first_declarator = first_declarator->val.type_mod.next;
+                    break;
+                default:
+                    yyerror("unknown AST node in final declarator traversal");
+            }
+        }
+
+        int CURRENT_SYMBOL_SCOPE = 0;
+        switch (CURRENT_SCOPE->scope) {
+            case TABLE_GLOBAL:
+                CURRENT_SYMBOL_SCOPE = SYM_GLOBAL;
+                if (CURRENT_STORAGE_CLASS == SC_AUTO || CURRENT_STORAGE_CLASS == SC_REGISTER) {
+                    yyerror("storage class not allowed in global scope");
+                } else if (!CURRENT_STORAGE_CLASS) {
+                    CURRENT_STORAGE_CLASS = SC_EXTERN_IMPLICIT;
+                }
+                break;
+            case TABLE_FUNCTION:
+            case TABLE_BLOCK:
+                CURRENT_SYMBOL_SCOPE = CURRENT_STORAGE_CLASS ? SC_AUTO : CURRENT_STORAGE_CLASS;
+                break;
+            default:
+                yyerror("unrecognized table scope");
+        }
+
+        struct symbol_table_entry_ll_node *first_node = insert_symbol_var(first_declarator->val.ident.ident_name, CURRENT_SYMBOL_SCOPE, CURRENT_STORAGE_CLASS);
+        first_node->specs.variable.is_defined = 1;
+        first_node->specs.variable.type = build_full_type_from_declarator(first_declarator, &CURRENT_TYPE_BUILDER);
+
+        reset_current_type_builder();
+        CURRENT_STORAGE_CLASS = 0;
     }
+
 
 declaration-specifiers:
     storage-class-specifier declaration-specifiers {$$ = NULL;}
@@ -535,8 +608,8 @@ statement:
 
 labeled-statement:
     ident-expr ':' statement {
-        char *name = $1->val.ident.ident_name
-        free($1)
+        char *name = $1->val.ident.ident_name;
+        free($1);
         int scope;
         switch (CURRENT_SCOPE->scope) {
             case TABLE_GLOBAL:
@@ -555,15 +628,23 @@ labeled-statement:
     }
 
 compound-statement:
-    '{' {CURRENT_SCOPE = new_scope(TABLE_BLOCK);} block-item-list '}' {
+    compound-start compound-body '}' {
         ast_node *node = calloc(1, sizeof(ast_node));
         node->node_type = AST_COMPOUND_STATEMENT;
-        node->val.compound.blocks = $1;
+        node->val.compound.blocks = $2;
         node->val.compound.scope = CURRENT_SCOPE;
         exit_scope();
         $$ = node;
     }
-    '{' '}' {$$ = NULL;}
+    | '{' '}' {$$ = NULL;}
+
+compound-start:
+    '{' {
+        CURRENT_SCOPE = new_scope(TABLE_BLOCK);
+    }
+
+compound-body:
+    block-item-list {$$ = $1;}
 
 block-item-list:
     block-item {$$ = $1;}
@@ -572,21 +653,25 @@ block-item-list:
             $$ = $2;
         } else {
             ast_node *current_block = $1;
-            while (current_block->val.block.next) {
+            while (current_block && current_block->node_type == AST_BLOCK && current_block->val.block.next) {
                 current_block = current_block->val.block.next;
             }
-            current_block->val.block.next = $2;
+            if (current_block && current_block->node_type == AST_BLOCK) {
+                current_block->val.block.next = $2;
+            } else {
+                yyerror("block-item-list structure corrupted: non-AST_BLOCK node in .next chain");
+            }
             $$ = $1;
         }
     }
 
 block-item:
-    declaration {$$ = ast_node *create_block_node($1);}
-    | statement {$$ = ast_node *create_block_node($1);}
+    declaration {$$ = create_block_node(NULL);}
+    | statement {$$ = create_block_node($1);}
 
 expression-statement:
-    /* empty */ {$$ = NULL;}
-    | expression {$$ = $1;}
+    ';' {$$ = NULL;}
+    | expression ';' {$$ = $1;}
 
 selection-statement:
     IF '(' expression ')' statement {
@@ -637,39 +722,59 @@ iteration-statement:
 
 jump-statement:
     GOTO ident-expr ';' {
-        char *name = $1->val.ident.ident_name
-        free($1)
+        char *name = $2->val.ident.ident_name;
+        free($2);
         ast_node *node = calloc(1, sizeof(ast_node));
         node->node_type = AST_GOTO;
-        struct symbol_table_entry_ll_node *symbol = find_symbol_in_table(name, CURRENT_SCOPE->table);
+        struct symbol_table_entry_ll_node *symbol = find_symbol_in_table(name, CURRENT_SCOPE);
         if (!symbol) {
             yyerror("Undefined Label");
         }
         node->val.goto_label.label = symbol;
+        $$ = node;
     }
-    CONTINUE ';' {
+    | CONTINUE ';' {
         ast_node *node = calloc(1, sizeof(ast_node));
         node->node_type = AST_CONTINUE;
+        $$ = node;
     }
-    BREAK ';' {
+    | BREAK ';' {
         ast_node *node = calloc(1, sizeof(ast_node));
         node->node_type = AST_BREAK;
+        $$ = node;
     }
-    RETURN expression-opt ';' {
+    | RETURN expression-opt ';' {
         ast_node *node = calloc(1, sizeof(ast_node));
         node->node_type = AST_RETURN;
         node->val.return_statement.expression = $2;
+        $$ = node;
     }
 
 /* 6.9 EXTERNAL DEFINITIONS */
 
 external-declaration:
-    function-definition {$$ = $1}
-    | declaration {$$ = $1}
+    declaration {
+        print_symbol_table(CURRENT_SCOPE, 0);
+        $$ = NULL;
+    }
+    | statement {$$ = $1;}
+    | function-definition {
+        print_symbol_table(CURRENT_SCOPE, 0);
+        $$ = $1;
+    }
 
-/* function-definition:
+function-definition:
     declaration-specifiers declarator compound-statement {
-        ast_node *ident_node = find_ident_node($2);  // extract IDENT from declarator
+        ast_node *ident_node = $2;
+        while (ident_node->node_type != AST_IDENT) {
+            if (ident_node->node_type == AST_UNOP && ident_node->val.unop.op == U_FUNCTION_TYPE) {
+                ident_node = ident_node->val.unop.center;
+            } else if (ident_node->node_type == AST_TYPE_MOD) {
+                ident_node = ident_node->val.type_mod.next;
+            } else {
+                yyerror("could not find identifier in function declarator");
+            }
+        }
         if (!ident_node) {
             yyerror("function definition missing identifier");
         }
@@ -680,21 +785,31 @@ external-declaration:
         node->node_type = AST_FUNCTION_DEF;
         node->val.fn_def.return_type = type;
         node->val.fn_def.name = ident_node->val.ident.ident_name;
-        node->val.fn_def.body = $3;
+        node->val.fn_def.content = $3;
 
-        insert_symbol_fn(node->val.fn_def.name, type);  // symbol table entry
+        insert_symbol_fn(ident_node->val.ident.ident_name, SYM_GLOBAL);  // symbol table entry
 
         $$ = node;
 
         reset_current_type_builder();
         CURRENT_STORAGE_CLASS = 0;
-    } */
+    }
 
 %%
 
-int main() {
+int main(int argc, char **argv) {
     init_global_table();
     yydebug = 0;
+
+    if (argc >= 2) {
+        yyin = fopen(argv[1], "r");
+        if (!yyin) {
+            perror("fopen");
+            return 1;
+        }
+    } else {
+        yyin = stdin;
+    }
     yyparse();
     return 0;
 }
