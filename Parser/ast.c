@@ -1,4 +1,5 @@
 #include "ast.h"
+#include "../SymbolTable/sym_tab.h"
 
 char *unop_to_str(enum unop_type type) {
     char *ret_str;
@@ -331,6 +332,54 @@ void print_ast_node(int depth, ast_node *node) {
                     break;
             }
             print_ast_node(depth + 1, node->val.type_mod.next);
+        case AST_BLOCK:
+            printf("BLOCK:\n");
+            print_ast_node(depth + 1, node->val.block.statement);
+            print_ast_node(depth + 1, node->val.block.next);
+            break;
+        case AST_FUNCTION_CALL:
+            printf("%s()\n", node->val.function_call.fn->name);
+            break;
+        case AST_COMPOUND_STATEMENT:
+            printf("COMPOUND:\n");
+            print_ast_node(depth + 1, node->val.compound.blocks);
+            break;
+        case AST_IF:
+            printf("IF:\n");
+            print_ast_node(depth + 1, node->val.if_statement.expression);
+            print_ast_node(depth + 1, node->val.if_statement.statement);
+            print_ast_node(depth + 1, node->val.if_statement.else_statement);
+        case AST_WHILE:
+            printf("WHILE:\n");
+            print_ast_node(depth + 1, node->val.while_statement.expression);
+            print_ast_node(depth + 1, node->val.while_statement.statement);
+        case AST_DO_WHILE:
+            printf("DO WHILE:\n");
+            print_ast_node(depth + 1, node->val.do_while_statement.expression);
+            print_ast_node(depth + 1, node->val.do_while_statement.statement);
+            break;
+        case AST_FOR:
+            printf("FOR:\n");
+            print_ast_node(depth + 1, node->val.for_statement.expr_1);
+            print_ast_node(depth + 1, node->val.for_statement.expr_3);
+            print_ast_node(depth + 1, node->val.for_statement.expr_3);
+            print_ast_node(depth + 1, node->val.for_statement.statement);
+            break;
+        case AST_GOTO:
+            printf("GOTO %s\n", node->val.goto_label.label->name);
+            break;
+        case AST_CONTINUE:
+            printf("CONTINUE\n");
+            break;
+        case AST_BREAK:
+            printf("BREAK\n");
+            break;
+        case AST_RETURN:
+            printf("RETURN:\n");
+            print_ast_node(depth + 1, node->val.return_statement.expression);
+            break;
+        // case AST_FUNCTION_DEF:
+        //     break;
         default:
             printf("\rERROR (%d)\n", node->node_type);
             break;
@@ -435,4 +484,12 @@ enum primitive_type get_primitive_type(struct type_builder built_type) {
     } 
     // otherwise is type long, int, or unspecified type
     return built_type.is_unsigned ? TYPE_UNSIGNED_INT : TYPE_SIGNED_INT;
+}
+
+ast_node *create_block_node(ast_node *statement) {
+    ast_node *statement_node = calloc(1, sizeof(ast_node));
+    statement_node->node_type = AST_BLOCK;
+    statement_node->val.block.statement = statement;
+    /* statement_node->val.type_mod.next = NULL; */
+    return statement_node;
 }

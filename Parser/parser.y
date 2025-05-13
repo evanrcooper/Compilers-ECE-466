@@ -34,45 +34,27 @@
 %token LOGAND LOGOR
 %token TIMESEQ PLUSEQ XOREQ MINUSEQ DIVEQ MODEQ SHLEQ SHREQ ANDEQ OREQ
 
-%token ELLIPSIS
 %token AUTO
 %token BREAK
-%token CASE
 %token CHAR
-%token CONST
 %token CONTINUE
-%token DEFAULT
 %token DO
-%token DOUBLE
 %token ELSE
-%token ENUM
 %token EXTERN
-%token FLOAT
 %token FOR
 %token GOTO
 %token IF
-%token INLINE
 %token INT
 %token LONG
 %token REGISTER
-%token RESTRICT
 %token RETURN
 %token SHORT
 %token SIGNED
 %token SIZEOF
 %token STATIC
-%token STRUCT
-%token SWITCH
-%token TYPEDEF
-%token UNION
 %token UNSIGNED
 %token VOID
-%token VOLATILE
 %token WHILE
-
-%token _BOOL
-%token _COMPLEX
-%token _IMAGINARY
 
 %type <node> primary-expression 
 %type <node> postfix-expression 
@@ -92,7 +74,6 @@
 %type <node> assignment-expression
 %type <node> expression
 %type <node> constant-expression
-%type <node> expression-stmt
 %type <node> ident-expr
 %type <node> numlit-expr
 %type <node> pointer
@@ -109,14 +90,16 @@
 %type <node> abstract-declarator
 %type <node> iteration-statement
 %type <node> jump-statement
-%type <node> translation-unit
 %type <node> block-item
 %type <node> block-item-list
 %type <node> compound-statement
 %type <node> expression-statement
 %type <node> function-definition
-%type <node> declaration-list
 %type <node> external-declaration
+%type <node> labeled-statement
+%type <node> statement
+%type <node> type-name
+%type <node> selection-statement
 
 %%
 
@@ -127,7 +110,8 @@
 
 program:
     /* empty */
-    | program translation-unit
+    | program function-definition
+    | program statement
 
 ident-expr:
     IDENT {
@@ -177,21 +161,23 @@ primary-expression:
 postfix-expression:
     primary-expression {$$ = $1;}
     | postfix-expression '[' expression ']' {$$ = create_unop_node(U_DEREF, create_binop_node(B_PLUS, $1, $3));}
-    /* | postfix-expression '(' argument-expression-list-opt ')' {} */ // TODO B_FUNCTION_CALL: find ident that represents function name, then search symbol table for function and center points to entry in cymbol table
-    /* | postfix-expression '.' ident-expr {$$ = create_binop_node(B_STRUCT_OFFSET, $1, $3);} */
-    /* | postfix-expression INDSEL ident-expr {$$ = create_binop_node(B_INDSEL, $1, $3);} */
+    | postfix-expression '(' ')' {
+        if ($1->node_type != AST_IDENT) {
+            yyerror("Impossible Function Call")
+        }
+        struct symbol_table_entry_ll_node *entry = find_symbol_in_scope($1->val.ident.ident_name, CURRENT_SCOPE);
+        free($1);
+        if (!entry) {
+            yyerror("Unresolved Function Call")
+        }
+        ast_node *node = calloc(1, sizeof(ast_node));
+        node->node_type = AST_FUNCTION_CALL;
+        node->val.function_call.fn = entry;
+        $$ = node;
+    }
+    | postfix-expression INDSEL ident-expr {$$ = create_binop_node(B_INDSEL, $1, $3);}
     | postfix-expression PLUSPLUS {$$ = create_unop_node(U_POST_PLUSPLUS, $1);}
     | postfix-expression MINUSMINUS {$$ = create_unop_node(U_POST_MINUSMINUS, $1);}
-    /* | '(' type-name ')' '{' initializer-list '}' */
-    /* | '(' type-name ')' '{' initializer-list ',' '}' */
-
-argument-expression-list-opt:
-    /* empty */
-    | argument-expression-list
-
-argument-expression-list:
-    assignment-expression
-    | argument-expression-list ',' assignment-expression
 
 
 unary-expression:
@@ -511,8 +497,8 @@ type-specifier-list:
     | type-specifier type-specifier-list {$$ = NULL;}
 
 type-name:
-    type-specifier-list abstract-declarator
-    | type-specifier-list
+    type-specifier-list abstract-declarator {$$ = $2;}
+    | type-specifier-list {$$ = NULL;}
 
 abstract-declarator:
     pointer {$$ = $1;}
@@ -540,69 +526,169 @@ direct-abstract-declarator:
 /* 6.8 STATEMENTS AND BLOCKS */
 
 statement:
-    labeled-statement
-    | compound-statement
-    | expression-statement
-    | selection-statement
-    | iteration-statement
-    | jump-statement
+    labeled-statement {$$ = $1;}
+    | compound-statement {$$ = $1;}
+    | expression-statement {$$ = $1;}
+    | selection-statement {$$ = $1;}
+    | iteration-statement {$$ = $1;}
+    | jump-statement {$$ = $1;}
 
 labeled-statement:
-    ident-expr ':' statement
+    ident-expr ':' statement {
+        char *name = $1->val.ident.ident_name
+        free($1)
+        int scope;
+        switch (CURRENT_SCOPE->scope) {
+            case TABLE_GLOBAL:
+                scope = SYM_GLOBAL;
+            case TABLE_FUNCTION:
+                scope = SYM_LOCAL;
+            case TABLE_BLOCK:
+                scope = SYM_BLOCK;
+            default:
+                yyerror("Unknown Scope");
+        }
+        struct symbol_table_entry_ll_node *entry = insert_symbol_lab(name, scope);
+        entry->specs.label.is_defined = 1;
+        entry->specs.label.jump_loc = $3;
+        $$ = $3;
+    }
 
 compound-statement:
-    '{' block-item-list '}' // CREATE BLOCK NODE THHAT POINTS TO SYMBOL TABLE AND EXIT SCOPE
+    '{' {CURRENT_SCOPE = new_scope(TABLE_BLOCK);} block-item-list '}' {
+        ast_node *node = calloc(1, sizeof(ast_node));
+        node->node_type = AST_COMPOUND_STATEMENT;
+        node->val.compound.blocks = $1;
+        node->val.compound.scope = CURRENT_SCOPE;
+        exit_scope();
+        $$ = node;
+    }
     '{' '}' {$$ = NULL;}
 
 block-item-list:
     block-item {$$ = $1;}
-    | block-item-list block-item
+    | block-item-list block-item {
+        if (!$1) {
+            $$ = $2;
+        } else {
+            ast_node *current_block = $1;
+            while (current_block->val.block.next) {
+                current_block = current_block->val.block.next;
+            }
+            current_block->val.block.next = $2;
+            $$ = $1;
+        }
+    }
 
 block-item:
-    declaration {$$ = $1;}
-    | statement {$$ = $1;}
+    declaration {$$ = ast_node *create_block_node($1);}
+    | statement {$$ = ast_node *create_block_node($1);}
 
 expression-statement:
     /* empty */ {$$ = NULL;}
     | expression {$$ = $1;}
 
 selection-statement:
-    IF '(' expression ')' statement
-    | IF '(' expression ')' statement ELSE statement
+    IF '(' expression ')' statement {
+        ast_node *node = calloc(1, sizeof(ast_node));
+        node->node_type = AST_IF;
+        node->val.if_statement.expression = $3;
+        node->val.if_statement.statement = $5;
+        node->val.if_statement.else_statement = NULL;
+        $$ = node;
+    }
+    | IF '(' expression ')' statement ELSE statement {
+        ast_node *node = calloc(1, sizeof(ast_node));
+        node->node_type = AST_IF;
+        node->val.if_statement.expression = $3;
+        node->val.if_statement.statement = $5;
+        node->val.if_statement.else_statement = $7;
+        $$ = node;
+    }
 
 expression-opt:
     /* empty */ {$$ = NULL;}
     | expression {$$ = $1;}
 
 iteration-statement:
-    WHILE '(' expression ')' statement
-    | DO statement WHILE '(' expression ')' ';'
-    | FOR '(' expression-opt ';' expression-opt ';' expression-opt ')' statement
-    | FOR '(' declaration expression-opt ';' expression-opt ')' statement
+    WHILE '(' expression ')' statement {
+        ast_node *node = calloc(1, sizeof(ast_node));
+        node->node_type = AST_WHILE;
+        node->val.while_statement.expression = $3;
+        node->val.do_while_statement.statement = $5;
+        $$ = node;
+    }
+    | DO statement WHILE '(' expression ')' ';' {
+        ast_node *node = calloc(1, sizeof(ast_node));
+        node->node_type = AST_DO_WHILE;
+        node->val.do_while_statement.expression = $5;
+        node->val.do_while_statement.statement = $2;
+        $$ = node;
+    }
+    | FOR '(' expression-opt ';' expression-opt ';' expression-opt ')' statement {
+        ast_node *node = calloc(1, sizeof(ast_node));
+        node->node_type = AST_FOR;
+        node->val.for_statement.expr_1 = $3;
+        node->val.for_statement.expr_2 = $5;
+        node->val.for_statement.expr_3 = $7;
+        node->val.for_statement.statement = $9;
+        $$ = node;
+    }
 
 jump-statement:
-    GOTO ident-expr ';'
-    CONTINUE ';'
-    BREAK ';'
-    RETURN expression-opt ';'
+    GOTO ident-expr ';' {
+        char *name = $1->val.ident.ident_name
+        free($1)
+        ast_node *node = calloc(1, sizeof(ast_node));
+        node->node_type = AST_GOTO;
+        struct symbol_table_entry_ll_node *symbol = find_symbol_in_table(name, CURRENT_SCOPE->table);
+        if (!symbol) {
+            yyerror("Undefined Label");
+        }
+        node->val.goto_label.label = symbol;
+    }
+    CONTINUE ';' {
+        ast_node *node = calloc(1, sizeof(ast_node));
+        node->node_type = AST_CONTINUE;
+    }
+    BREAK ';' {
+        ast_node *node = calloc(1, sizeof(ast_node));
+        node->node_type = AST_BREAK;
+    }
+    RETURN expression-opt ';' {
+        ast_node *node = calloc(1, sizeof(ast_node));
+        node->node_type = AST_RETURN;
+        node->val.return_statement.expression = $2;
+    }
 
 /* 6.9 EXTERNAL DEFINITIONS */
-
-translation-unit:
-    external-declaration {$$ = $1}
-    | translation-unit external-declaration
 
 external-declaration:
     function-definition {$$ = $1}
     | declaration {$$ = $1}
 
-function-definition:
-    declaration-specifiers declarator declaration-list compound-statement
-    | declaration-specifiers declarator compound-statement
+/* function-definition:
+    declaration-specifiers declarator compound-statement {
+        ast_node *ident_node = find_ident_node($2);  // extract IDENT from declarator
+        if (!ident_node) {
+            yyerror("function definition missing identifier");
+        }
 
-declaration-list:
-    declaration {$$ = $1}
-    | declaration-list declaration
+        ast_node *type = build_full_type_from_declarator($2, &CURRENT_TYPE_BUILDER);
+
+        ast_node *node = calloc(1, sizeof(ast_node));
+        node->node_type = AST_FUNCTION_DEF;
+        node->val.fn_def.return_type = type;
+        node->val.fn_def.name = ident_node->val.ident.ident_name;
+        node->val.fn_def.body = $3;
+
+        insert_symbol_fn(node->val.fn_def.name, type);  // symbol table entry
+
+        $$ = node;
+
+        reset_current_type_builder();
+        CURRENT_STORAGE_CLASS = 0;
+    } */
 
 %%
 

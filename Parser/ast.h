@@ -86,6 +86,18 @@ enum ast_node_type {
     AST_TRIOP,
     AST_PRIMITIVE_TYPE,
     AST_TYPE_MOD,
+    AST_BLOCK,
+    AST_FUNCTION_CALL,
+    AST_COMPOUND_STATEMENT,
+    AST_IF,
+    AST_WHILE,
+    AST_DO_WHILE,
+    AST_FOR,
+    AST_GOTO,
+    AST_CONTINUE,
+    AST_BREAK,
+    AST_RETURN,
+    AST_FUNCTION_DEF,
 };
 
 enum primitive_type {
@@ -114,6 +126,10 @@ enum storage_class {
     SC_STATIC,
     SC_AUTO,
     SC_REGISTER,
+};
+
+struct ast_node_function_call {
+    struct symbol_table_entry_ll_node *fn;
 };
 
 struct ast_node_unop {
@@ -167,6 +183,52 @@ struct ast_node_type_modifier {
     int array_size; // ONLY USED FOR CONSTANT_SIZED_ARRAY
 };
 
+struct ast_node_block {
+    ast_node *next;
+    ast_node *statement;
+};
+
+struct ast_node_compound_statement {
+    ast_node *blocks;
+    struct symbol_table_dll_node *scope;
+};
+
+struct ast_node_if {
+    ast_node *expression;
+    ast_node *statement;
+    ast_node *else_statement;
+};
+
+struct ast_node_while {
+    ast_node *expression;
+    ast_node *statement;
+};
+
+struct ast_node_do_while {
+    ast_node *expression;
+    ast_node *statement;
+};
+
+struct ast_node_for {
+    ast_node *expr_1;
+    ast_node *expr_2;
+    ast_node *expr_3;
+    ast_node *statement;
+};
+
+struct ast_node_goto {
+    struct symbol_table_entry_ll_node *label;
+};
+
+struct ast_node_return {
+    ast_node *expression;
+};
+
+struct ast_node_function_defiinition {
+    ast_node *return_type;
+    ast_node *content;
+};
+
 typedef struct ast_node_struct {
     enum ast_node_type node_type;
     union ast_node_val {
@@ -179,7 +241,16 @@ typedef struct ast_node_struct {
         struct ast_node_strlit strlit;
         struct ast_node_primitive_type primitive_type;
         struct ast_node_type_modifier type_mod;
-        /* ... */
+        struct ast_node_block block;
+        struct ast_node_function_call function_call;
+        struct ast_node_compound_statement compound;
+        struct ast_node_if if_statement;
+        struct ast_node_while while_statement;
+        struct ast_node_do_while do_while_statement;
+        struct ast_node_for for_statement;
+        struct ast_node_goto goto_label;
+        struct ast_node_return return_statement;
+        struct ast_node_function_defiinition fn_def;
     } val;
 } ast_node;
 
@@ -210,6 +281,8 @@ ast_node* create_triop_node(enum binop_type op, ast_node *left, ast_node *center
 
 ast_node* create_primitive_type_node(enum primitive_type type);
 ast_node* create_type_modifier_node(enum type_modifier modifier, int array_size);
+
+ast_node *create_statement_node();
 
 typedef struct DYNAMIC_STRING {
     char *str_val;
