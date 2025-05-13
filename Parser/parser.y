@@ -74,7 +74,6 @@
 %token _COMPLEX
 %token _IMAGINARY
 
-
 %type <node> primary-expression 
 %type <node> postfix-expression 
 %type <node> unary-expression
@@ -108,6 +107,16 @@
 %type <node> expression-opt
 %type <node> direct-abstract-declarator
 %type <node> abstract-declarator
+%type <node> iteration-statement
+%type <node> jump-statement
+%type <node> translation-unit
+%type <node> block-item
+%type <node> block-item-list
+%type <node> compound-statement
+%type <node> expression-statement
+%type <node> function-definition
+%type <node> declaration-list
+%type <node> external-declaration
 
 %%
 
@@ -540,29 +549,26 @@ statement:
 
 labeled-statement:
     ident-expr ':' statement
-    | CASE constant-expression ':' statement
-    | DEFAULT ':' statement
 
 compound-statement:
-    '{' block-item-list '}'
-    '{' '}'
+    '{' block-item-list '}' // CREATE BLOCK NODE THHAT POINTS TO SYMBOL TABLE AND EXIT SCOPE
+    '{' '}' {$$ = NULL;}
 
 block-item-list:
-    block-item
+    block-item {$$ = $1;}
     | block-item-list block-item
 
 block-item:
-    declaration
-    | statement
+    declaration {$$ = $1;}
+    | statement {$$ = $1;}
 
 expression-statement:
-    /* empty */
-    | expression
+    /* empty */ {$$ = NULL;}
+    | expression {$$ = $1;}
 
 selection-statement:
     IF '(' expression ')' statement
     | IF '(' expression ')' statement ELSE statement
-    | SWITCH '(' expression ')' statement
 
 expression-opt:
     /* empty */ {$$ = NULL;}
@@ -583,19 +589,19 @@ jump-statement:
 /* 6.9 EXTERNAL DEFINITIONS */
 
 translation-unit:
-    external-declaration
+    external-declaration {$$ = $1}
     | translation-unit external-declaration
 
 external-declaration:
-    function-definition
-    | declaration
+    function-definition {$$ = $1}
+    | declaration {$$ = $1}
 
 function-definition:
     declaration-specifiers declarator declaration-list compound-statement
     | declaration-specifiers declarator compound-statement
 
 declaration-list:
-    declaration
+    declaration {$$ = $1}
     | declaration-list declaration
 
 %%
