@@ -3,15 +3,15 @@
 
 #include "../Parser/ast.h"
 
-#define PRINT_VARIABLE_TYPE 0
+#define PRINT_VARIABLE_TYPE 1
 
-#define PRINT_FUNCTION_RETURN_TYPE 0
-#define PRINT_FUNCTION_CONTENT 0
-#define PRINT_FUNCTION_SYMBOL_TABLE 0
+#define PRINT_FUNCTION_RETURN_TYPE 1
+#define PRINT_FUNCTION_CONTENT 1
+#define PRINT_FUNCTION_SYMBOL_TABLE 1
 
-#define PRINT_LABEL_JUMP_LOCATION 0
+#define PRINT_LABEL_JUMP_LOCATION 1
 
-#define PRINT_ALL_SYMBOL_INFO_FROM_TABLE 0
+#define PRINT_ALL_SYMBOL_INFO_FROM_TABLE 1
 
 enum SYMBOL_ROLE {
     SYM_VAR = 1,
@@ -90,5 +90,6 @@ void print_symbol_table_scope(struct symbol_table_dll_node *table, int indents);
 void print_symbol_table(struct symbol_table_dll_node *table, int indents);
 struct symbol_table_entry_ll_node* find_symbol_in_table(char *name, struct symbol_table_dll_node *table);
 struct symbol_table_entry_ll_node* find_symbol_in_scope(char *name, struct symbol_table_dll_node *deepest_scope);
+ast_node* build_full_type_from_declarator(ast_node *declarator, struct type_builder *builder);
 
 #endif // SYMTAB_H
