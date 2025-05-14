@@ -263,14 +263,14 @@ void print_ast_tree(ast_node *root) {
 
 void print_ast_node(int depth, ast_node *node) {
     char *op;
+    if (!node) {
+        // printf("(null)\n");
+        return;
+    }
     for (int i = 0; i < depth; i++) {
         printf("-- ");
     }
-    if (!node) {
-        printf("(null)\n");
-        return;
-    }
-    printf("[node_type=%d] ", node->node_type);
+    // printf("[node_type=%d] ", node->node_type);
     switch (node->node_type) {
         case AST_NUMLIT:
             switch (node->val.numlit.type) {

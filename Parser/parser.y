@@ -141,9 +141,9 @@ ident-expr:
         ident_node->val.ident.ident_name = strdup(yylval.str_val);
         ident_node->val.ident.symbol = find_symbol_in_scope(ident_node->val.ident.ident_name, CURRENT_SCOPE);
 
-        if (!ident_node->val.ident.symbol) {
-            printf("Warning: unresolved identifier '%s'\n", ident_node->val.ident.ident_name);
-        }
+        // if (!ident_node->val.ident.symbol) {
+        //     printf("Warning: unresolved identifier '%s'\n", ident_node->val.ident.ident_name);
+        // }
 
         $$ = ident_node;
     }
