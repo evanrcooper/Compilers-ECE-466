@@ -311,13 +311,18 @@ declaration:
         while (current_declarator_comma_node->val.binop.left) {
             ast_node *current_declarator = current_declarator_comma_node->val.binop.right;
 
-            while (current_declarator->node_type != AST_IDENT) {
-                switch (current_declarator->node_type) {
+            // Preserve full declarator tree for type building
+            ast_node *type_tree = current_declarator;
+            ast_node *ident_node = current_declarator;
+
+            // Find identifier node within the declarator
+            while (ident_node->node_type != AST_IDENT) {
+                switch (ident_node->node_type) {
                     case AST_UNOP:
-                        current_declarator = current_declarator->val.unop.center;
+                        ident_node = ident_node->val.unop.center;
                         break;
                     case AST_TYPE_MOD:
-                        current_declarator = current_declarator->val.type_mod.next;
+                        ident_node = ident_node->val.type_mod.next;
                         break;
                     default:
                         yyerror("unknown AST node in declarator traversal");
@@ -342,22 +347,28 @@ declaration:
                     yyerror("unrecognized table scope");
             }
 
-            struct symbol_table_entry_ll_node *node = insert_symbol_var(current_declarator->val.ident.ident_name, CURRENT_SYMBOL_SCOPE, CURRENT_STORAGE_CLASS);
+            struct symbol_table_entry_ll_node *node = insert_symbol_var(
+                ident_node->val.ident.ident_name, CURRENT_SYMBOL_SCOPE, CURRENT_STORAGE_CLASS);
             node->specs.variable.is_defined = 1;
-            node->specs.variable.type = build_full_type_from_declarator(current_declarator, &CURRENT_TYPE_BUILDER);
+            node->specs.variable.type = build_full_type_from_declarator(type_tree, &CURRENT_TYPE_BUILDER);
 
             current_declarator_comma_node = current_declarator_comma_node->val.binop.left;
         }
 
-        // Handle the final (leftmost) declarator (left == NULL)
+        // Handle the final (leftmost) declarator
         ast_node *first_declarator = current_declarator_comma_node->val.binop.right;
-        while (first_declarator->node_type != AST_IDENT) {
-            switch (first_declarator->node_type) {
+
+        // Preserve full declarator tree
+        ast_node *type_tree = first_declarator;
+        ast_node *ident_node = first_declarator;
+
+        while (ident_node->node_type != AST_IDENT) {
+            switch (ident_node->node_type) {
                 case AST_UNOP:
-                    first_declarator = first_declarator->val.unop.center;
+                    ident_node = ident_node->val.unop.center;
                     break;
                 case AST_TYPE_MOD:
-                    first_declarator = first_declarator->val.type_mod.next;
+                    ident_node = ident_node->val.type_mod.next;
                     break;
                 default:
                     yyerror("unknown AST node in final declarator traversal");
@@ -382,13 +393,15 @@ declaration:
                 yyerror("unrecognized table scope");
         }
 
-        struct symbol_table_entry_ll_node *first_node = insert_symbol_var(first_declarator->val.ident.ident_name, CURRENT_SYMBOL_SCOPE, CURRENT_STORAGE_CLASS);
+        struct symbol_table_entry_ll_node *first_node = insert_symbol_var(
+            ident_node->val.ident.ident_name, CURRENT_SYMBOL_SCOPE, CURRENT_STORAGE_CLASS);
         first_node->specs.variable.is_defined = 1;
-        first_node->specs.variable.type = build_full_type_from_declarator(first_declarator, &CURRENT_TYPE_BUILDER);
+        first_node->specs.variable.type = build_full_type_from_declarator(type_tree, &CURRENT_TYPE_BUILDER);
 
         reset_current_type_builder();
         CURRENT_STORAGE_CLASS = 0;
     }
+
 
 
 declaration-specifiers:

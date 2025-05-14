@@ -275,10 +275,10 @@ void print_ast_node(int depth, ast_node *node) {
         case AST_NUMLIT:
             switch (node->val.numlit.type) {
                 case N_LLF:
-                    printf("FLOAT: %Lf\n", node->val.numlit.val.real_val);
+                    printf("FLOATLIT: %Lf\n", node->val.numlit.val.real_val);
                     break;
                 case N_LLI:
-                    printf("INT: %lld\n", node->val.numlit.val.int_val);
+                    printf("NUMLIT: %lld\n", node->val.numlit.val.int_val);
                     break;
             }
             break;

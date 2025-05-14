@@ -117,6 +117,11 @@
     }
 }
 
+0 {
+    yylval.int_val = 0;
+    return NUMLIT;
+}
+
 [1-9][0-9]* { /* decimal numbers */
     yylval.int_val = strtoll(yytext, NULL, 10);
     return NUMLIT;

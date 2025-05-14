@@ -287,23 +287,34 @@ enum TABLE_SCOPE get_scope_type() {
 }
 
 ast_node* build_full_type_from_declarator(ast_node *declarator, struct type_builder *builder) {
+    // Step 1: Start with base primitive type
     ast_node *base_type = create_primitive_type_node(get_primitive_type(*builder));
     ast_node *type = declarator;
+    ast_node *wrapped = base_type;
 
-    ast_node *tail = base_type;
-
-    while (type) {
+    // Step 2: Wrap with type modifiers
+    while (type && type->node_type != AST_IDENT) {
         if (type->node_type == AST_TYPE_MOD) {
-            type->val.type_mod.next = tail;
-            tail = type;
+            ast_node *new_node = calloc(1, sizeof(ast_node));
+            new_node->node_type = AST_TYPE_MOD;
+            new_node->val.type_mod.modifier = type->val.type_mod.modifier;
+            new_node->val.type_mod.array_size = type->val.type_mod.array_size;
+            new_node->val.type_mod.next = wrapped;
+            wrapped = new_node;
+
             type = type->val.type_mod.next;
         } else if (type->node_type == AST_UNOP && type->val.unop.op == U_FUNCTION_TYPE) {
-            type->val.unop.center = tail;
-            tail = type;
-            break;
+            ast_node *new_node = calloc(1, sizeof(ast_node));
+            new_node->node_type = AST_UNOP;
+            new_node->val.unop.op = U_FUNCTION_TYPE;
+            new_node->val.unop.center = wrapped;
+            wrapped = new_node;
+
+            type = type->val.unop.center;
         } else {
             break;
         }
     }
-    return tail;
+
+    return wrapped;
 }
