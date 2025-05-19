@@ -5,11 +5,13 @@
     struct symbol_table_dll_node *CURRENT_SCOPE;
     struct type_builder CURRENT_TYPE_BUILDER = {0};
     int CURRENT_STORAGE_CLASS = 0;
+    extern quad_ll_node *quad_head;
 %}
 
 %code requires {
     #include "ast.h"
     #include "../SymbolTable/sym_tab.h"
+    #include "../Quads/quads.h"
     #include <stdio.h>
     #include <stdlib.h>
     int yyerror(const char *s);
@@ -131,8 +133,15 @@
 
 program:
     /* empty */
-    /* | program function-definition */
-    | program external-declaration {print_ast_tree($2);}
+    | program expression {
+        generate_quads($2);
+    }
+    | program function-definition {
+        generate_quads($2);
+    }
+    | program external-declaration {
+        generate_quads($2);
+    }
 
 ident-expr:
     IDENT {
@@ -767,12 +776,12 @@ jump-statement:
 
 external-declaration:
     declaration {
-        print_symbol_table(CURRENT_SCOPE, 0);
+        // print_symbol_table(CURRENT_SCOPE, 0);
         $$ = NULL;
     }
     | statement {$$ = $1;}
     | function-definition {
-        print_symbol_table(CURRENT_SCOPE, 0);
+        // print_symbol_table(CURRENT_SCOPE, 0);
         $$ = $1;
     }
 
@@ -825,6 +834,7 @@ int main(int argc, char **argv) {
         yyin = stdin;
     }
     yyparse();
+
     return 0;
 }
 
