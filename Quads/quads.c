@@ -571,11 +571,14 @@ ast_node *strip_deref_type(ast_node *type) {
     return NULL;  // unknown or invalid input
 }
 long long unsigned int get_size_of_expr(ast_node *node) {
-    print_ast_tree(node);
-    
-    if (!node) return 0;
+    if (!node) {
+        return 0;
+    };
 
     switch (node->node_type) {
+        case AST_TYPE_MOD:
+        case AST_PRIMITIVE_TYPE:
+            return get_size_of_type(node);
         case AST_IDENT:
             return get_size_of_ident(node);
 
@@ -584,10 +587,10 @@ long long unsigned int get_size_of_expr(ast_node *node) {
                 ast_node *center = node->val.unop.center;
                 if (center->node_type == AST_IDENT && center->val.ident.symbol) {
                     ast_node *base_type = center->val.ident.symbol->specs.variable.type;
-                    ast_node *stripped = strip_deref_type(base_type);  // << ADD THIS
-                    return get_size_of_type(stripped);                 // << FIXED
+                    ast_node *stripped = strip_deref_type(base_type);
+                    return get_size_of_type(stripped);
                 }
-                return get_size_of_expr(center);  // fallback
+                return get_size_of_expr(center);
             }
 
         case AST_NUMLIT:
@@ -622,50 +625,59 @@ long long unsigned int get_size_of_ident(ast_node *node) {
 long long unsigned int get_size_of_type(ast_node *type) {
     if (!type) return 0;
 
+    // Case: primitive type (base case of recursion)
     if (type->node_type == AST_PRIMITIVE_TYPE) {
-        long long unsigned int base_size = 0;
+        long long unsigned int base_size;
         switch (type->val.primitive_type.type) {
             case TYPE_SIGNED_CHAR:
-            case TYPE_UNSIGNED_CHAR: base_size = 1; break;
+            case TYPE_UNSIGNED_CHAR:
+                base_size = 1; break;
             case TYPE_SIGNED_SHORT:
-            case TYPE_UNSIGNED_SHORT: base_size = 2; break;
+            case TYPE_UNSIGNED_SHORT:
+                base_size = 2; break;
             case TYPE_SIGNED_INT:
-            case TYPE_UNSIGNED_INT: base_size = 4; break;
+            case TYPE_UNSIGNED_INT:
+                base_size = 4; break;
             case TYPE_SIGNED_LONG:
-            case TYPE_UNSIGNED_LONG: base_size = 8; break;
+            case TYPE_UNSIGNED_LONG:
+                base_size = 8; break;
             case TYPE_SIGNED_LONG_LONG:
-            case TYPE_UNSIGNED_LONG_LONG: base_size = 8; break;
-            case TYPE_VOID: base_size = 1; break;
+            case TYPE_UNSIGNED_LONG_LONG:
+                base_size = 8; break;
+            case TYPE_VOID:
+                base_size = 1; break;
             default:
                 fprintf(stderr, "Unknown primitive type\n");
                 return 0;
         }
 
-        type = type->val.primitive_type.next;
-        while (type) {
-            if (type->node_type != AST_TYPE_MOD) break;
+        // recurse into any modifiers (like arrays)
+        ast_node *next = type->val.primitive_type.next;
+        if (!next) return base_size;
+        long long unsigned int child_size = get_size_of_type(next);
 
-            switch (type->val.type_mod.modifier) {
-                case CONSTANT_SIZED_ARRAY:
-                    base_size *= type->val.type_mod.array_size;
-                    break;
-                case UNSIZED_ARRAY:
-                    fprintf(stderr, "sizeof unsized array is undefined\n");
-                    return 0;
-                case POINTER:
-                    return 8;  // early out
-            }
-
-            type = type->val.type_mod.next;
-        }
-
-        return base_size;
+        // For a primitive with modifier(s), we always evaluate bottom-up
+        return (child_size == 0) ? base_size : child_size;
     }
 
-    // Top-level pointer (rare but valid)
-    if (type->node_type == AST_TYPE_MOD &&
-        type->val.type_mod.modifier == POINTER)
-        return 8;
+    // Case: modifier node
+    if (type->node_type == AST_TYPE_MOD) {
+        long long unsigned int child_size = get_size_of_type(type->val.type_mod.next);
 
+        switch (type->val.type_mod.modifier) {
+            case CONSTANT_SIZED_ARRAY:
+                return child_size * type->val.type_mod.array_size;
+            case UNSIZED_ARRAY:
+                fprintf(stderr, "sizeof unsized array is undefined\n");
+                return 0;
+            case POINTER:
+                return 8; // size of any pointer
+            default:
+                return child_size;
+        }
+    }
+
+    // Unknown or malformed node
+    fprintf(stderr, "Unknown type node in get_size_of_type\n");
     return 0;
 }

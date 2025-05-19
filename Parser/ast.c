@@ -506,3 +506,11 @@ ast_node *create_block_node(ast_node *statement) {
     /* statement_node->val.type_mod.next = NULL; */
     return statement_node;
 }
+
+ast_node *create_numlit_node(long long int val) {
+    ast_node *n = calloc(1, sizeof(ast_node));
+    n->node_type = AST_NUMLIT;
+    n->val.numlit.type = N_LLI;
+    n->val.numlit.val.int_val = val;
+    return n;
+}

@@ -303,4 +303,6 @@ void reset_current_type_builder();
 
 ast_node *create_block_node(ast_node *statement);
 
+ast_node *create_numlit_node(long long int val);
+
 #endif // AST_H

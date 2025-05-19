@@ -73,3 +73,7 @@ int main2() {
 
     return x + y + z;
 }
+
+int ary_12_10[12][10];
+int a_indexed_1;
+b = a[1];

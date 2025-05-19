@@ -199,24 +199,33 @@ primary-expression:
 postfix-expression:
     primary-expression {$$ = $1;}
     | postfix-expression '[' expression ']' {
-        $$ = create_unop_node(
-            U_DEREF, 
-            create_binop_node(
-                B_PLUS, 
-                $1, 
-                create_binop_node(
-                    B_TIMES, 
-                    $3, 
-                    create_unop_node(
-                        U_SIZEOF_EXPRESSION, 
-                        create_unop_node(
-                            U_DEREF, 
-                            $1
-                        )
-                    )
-                )
-            )
-        );
+        ast_node *ident = $1;
+
+        // Find the identifier node inside $1
+        while (ident->node_type != AST_IDENT) {
+            if (ident->node_type == AST_UNOP)
+                ident = ident->val.unop.center;
+            else if (ident->node_type == AST_TYPE_MOD)
+                ident = ident->val.type_mod.next;
+            else
+                yyerror("invalid array expression base");
+        }
+
+        if (!ident->val.ident.symbol) {
+            yyerror("array base not resolved to symbol");
+        }
+
+        // Get original type from symbol
+        ast_node *orig_type = ident->val.ident.symbol->specs.variable.type;
+
+        // Strip one pointer/array layer
+        ast_node *stripped_type = strip_deref_type(orig_type);
+
+        // Build: *(base + index * unit_size)
+        ast_node *unit_size_node = create_unop_node(U_SIZEOF_EXPRESSION, stripped_type);
+        ast_node *offset = create_binop_node(B_TIMES, $3, unit_size_node);
+        ast_node *addr = create_binop_node(B_PLUS, $1, offset);
+        $$ = create_unop_node(U_DEREF, addr);
     }
     | postfix-expression '(' ')' {
         if ($1->node_type != AST_IDENT) {
