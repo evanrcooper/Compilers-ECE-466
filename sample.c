@@ -45,11 +45,9 @@ int main2() {
 
     ptr = &x;
     z = *ptr;
-
+    
     arr1[0] = 7;
     arr1[1] = arr1[0] + 3;
-
-    z = arr2[2][3];
 
     x = get_five();
     y = square();
@@ -75,5 +73,6 @@ int main2() {
 }
 
 int ary_12_10[12][10];
-int a_indexed_1;
-b = a[1];
+int a_indexed_1[], a_indexed_2;
+a_indexed_1 = ary_12_10[1];
+a_indexed_2 = a_indexed_1[2];
