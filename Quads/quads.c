@@ -26,8 +26,8 @@ void emit_quad(quad_op op, char *dest, char *src1, char *src2) {
 char *current_continue_label = NULL;
 char *current_break_label = NULL;
 
-int temp_count = 1;
-int label_count = 1;
+int temp_count = 0;
+int label_count = 0;
 
 char *new_temp_reg() {
     char buf[64];
@@ -216,6 +216,11 @@ char *gen_quad_AST_UNOP(ast_node *node) {
             emit_quad(Q_ASSIGN, tmp, arg, NULL);
             emit_quad(Q_SUB, arg, arg, "1"); 
             break;
+        case U_SIZEOF_EXPRESSION:
+            char *buf = malloc(32);  // Allocate enough space for an int
+            if (!buf) return NULL;
+            sprintf(buf, "%llu", get_size_of_expr(node->val.unop.center));
+            return buf;
         default:
             fprintf(stderr, "Unsupported unary op\n");
             break;
@@ -537,13 +542,130 @@ char *gen_quad_AST_BREAK(ast_node *node) {
 }
 
 char *gen_quad_AST_FUNCTION_DEF(ast_node *node) {
-    struct symbol_table_entry_ll_node *fn = node->val.fn_def.return_type->val.ident.symbol;
-    if (!fn || !fn->name) {
+    char* name = node->val.fn_def.name;
+    if (!name) {
         fprintf(stderr, "Missing function symbol in definition\n");
         return NULL;
     }
 
-    emit_quad(Q_LABEL, fn->name, NULL, NULL);
+    emit_quad(Q_LABEL, name, NULL, NULL);
     gen_quad(node->val.fn_def.content);
     return NULL;
+}
+
+ast_node *strip_deref_type(ast_node *type) {
+    if (!type) return NULL;
+
+    // Case 1: pointer or array modifier
+    if (type->node_type == AST_TYPE_MOD) {
+        return type->val.type_mod.next;  // strip one layer
+    }
+
+    // Case 2: primitive + modifiers (e.g., int[10][20] or int*[5])
+    if (type->node_type == AST_PRIMITIVE_TYPE) {
+        ast_node *mod = type->val.primitive_type.next;
+        if (!mod) return NULL;  // just a primitive (int), can't deref
+        return mod->val.type_mod.next;  // strip one modifier
+    }
+
+    return NULL;  // unknown or invalid input
+}
+long long unsigned int get_size_of_expr(ast_node *node) {
+    print_ast_tree(node);
+    
+    if (!node) return 0;
+
+    switch (node->node_type) {
+        case AST_IDENT:
+            return get_size_of_ident(node);
+
+        case AST_UNOP:
+            if (node->val.unop.op == U_DEREF) {
+                ast_node *center = node->val.unop.center;
+                if (center->node_type == AST_IDENT && center->val.ident.symbol) {
+                    ast_node *base_type = center->val.ident.symbol->specs.variable.type;
+                    ast_node *stripped = strip_deref_type(base_type);  // << ADD THIS
+                    return get_size_of_type(stripped);                 // << FIXED
+                }
+                return get_size_of_expr(center);  // fallback
+            }
+
+        case AST_NUMLIT:
+            return sizeof(int);
+
+        case AST_CHARLIT:
+            return sizeof(char);
+
+        case AST_BINOP:
+        case AST_TRIOP: {
+            long long unsigned int l = get_size_of_expr(
+                node->node_type == AST_BINOP ? node->val.binop.left : node->val.triop.center);
+            long long unsigned int r = get_size_of_expr(
+                node->node_type == AST_BINOP ? node->val.binop.right : node->val.triop.right);
+            return (l < 4 && r < 4) ? 4 : (l > r ? l : r);
+        }
+
+        default:
+            return 0;
+    }
+}
+
+long long unsigned int get_size_of_ident(ast_node *node) {
+    if (!node || node->node_type != AST_IDENT || !node->val.ident.symbol) {
+        fprintf(stderr, "Invalid identifier for sizeof\n");
+        return 0;
+    }
+
+    return get_size_of_type(node->val.ident.symbol->specs.variable.type);
+}
+
+long long unsigned int get_size_of_type(ast_node *type) {
+    if (!type) return 0;
+
+    if (type->node_type == AST_PRIMITIVE_TYPE) {
+        long long unsigned int base_size = 0;
+        switch (type->val.primitive_type.type) {
+            case TYPE_SIGNED_CHAR:
+            case TYPE_UNSIGNED_CHAR: base_size = 1; break;
+            case TYPE_SIGNED_SHORT:
+            case TYPE_UNSIGNED_SHORT: base_size = 2; break;
+            case TYPE_SIGNED_INT:
+            case TYPE_UNSIGNED_INT: base_size = 4; break;
+            case TYPE_SIGNED_LONG:
+            case TYPE_UNSIGNED_LONG: base_size = 8; break;
+            case TYPE_SIGNED_LONG_LONG:
+            case TYPE_UNSIGNED_LONG_LONG: base_size = 8; break;
+            case TYPE_VOID: base_size = 1; break;
+            default:
+                fprintf(stderr, "Unknown primitive type\n");
+                return 0;
+        }
+
+        type = type->val.primitive_type.next;
+        while (type) {
+            if (type->node_type != AST_TYPE_MOD) break;
+
+            switch (type->val.type_mod.modifier) {
+                case CONSTANT_SIZED_ARRAY:
+                    base_size *= type->val.type_mod.array_size;
+                    break;
+                case UNSIZED_ARRAY:
+                    fprintf(stderr, "sizeof unsized array is undefined\n");
+                    return 0;
+                case POINTER:
+                    return 8;  // early out
+            }
+
+            type = type->val.type_mod.next;
+        }
+
+        return base_size;
+    }
+
+    // Top-level pointer (rare but valid)
+    if (type->node_type == AST_TYPE_MOD &&
+        type->val.type_mod.modifier == POINTER)
+        return 8;
+
+    return 0;
 }

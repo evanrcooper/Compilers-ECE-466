@@ -133,13 +133,16 @@
 
 program:
     /* empty */
-    | program expression {
-        gen_quad($2);
-    }
-    | program function-definition {
-        gen_quad($2);
-    }
     | program external-declaration {
+        print_ast_tree($2);
+        gen_quad($2);
+    }
+    | program expression-statement {
+        print_ast_tree($2);
+        gen_quad($2);
+    }
+    | program statement {
+        print_ast_tree($2);
         gen_quad($2);
     }
 
@@ -195,7 +198,26 @@ primary-expression:
 
 postfix-expression:
     primary-expression {$$ = $1;}
-    | postfix-expression '[' expression ']' {$$ = create_unop_node(U_DEREF, create_binop_node(B_PLUS, $1, $3));}
+    | postfix-expression '[' expression ']' {
+        $$ = create_unop_node(
+            U_DEREF, 
+            create_binop_node(
+                B_PLUS, 
+                $1, 
+                create_binop_node(
+                    B_TIMES, 
+                    $3, 
+                    create_unop_node(
+                        U_SIZEOF_EXPRESSION, 
+                        create_unop_node(
+                            U_DEREF, 
+                            $1
+                        )
+                    )
+                )
+            )
+        );
+    }
     | postfix-expression '(' ')' {
         if ($1->node_type != AST_IDENT) {
             yyerror("Impossible Function Call");
@@ -779,7 +801,6 @@ external-declaration:
         // print_symbol_table(CURRENT_SCOPE, 0);
         $$ = NULL;
     }
-    | statement {$$ = $1;}
     | function-definition {
         // print_symbol_table(CURRENT_SCOPE, 0);
         $$ = $1;
@@ -800,23 +821,26 @@ function-definition:
         if (!ident_node) {
             yyerror("function definition missing identifier");
         }
+
         ast_node *type = build_full_type_from_declarator($2, &CURRENT_TYPE_BUILDER);
         ast_node *node = calloc(1, sizeof(ast_node));
         node->node_type = AST_FUNCTION_DEF;
         node->val.fn_def.return_type = type;
         node->val.fn_def.content = $3;
+        node->val.fn_def.name = strdup(ident_node->val.ident.ident_name);  // ✅ THIS LINE
 
         struct symbol_table_entry_ll_node *fn_symbol = insert_symbol_fn(ident_node->val.ident.ident_name, SYM_GLOBAL);
 
         ident_node->val.ident.symbol = fn_symbol;
-
         fn_symbol->specs.function.return_type = type;
         fn_symbol->specs.function.content = $3;
+
         $$ = node;
 
         reset_current_type_builder();
         CURRENT_STORAGE_CLASS = 0;
     }
+
 
 %%
 

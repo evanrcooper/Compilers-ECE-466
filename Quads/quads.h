@@ -2,6 +2,7 @@
 #define QUADS_H
 
 #include "../Parser/ast.h"
+#include "../SymbolTable/sym_tab.h"
 
 typedef enum {
     Q_ADD = 1, Q_SUB, Q_MUL, Q_DIV, Q_MOD,
@@ -56,5 +57,9 @@ char *gen_quad_AST_FOR(ast_node *node);
 char *gen_quad_AST_CONTINUE(ast_node *node);
 char *gen_quad_AST_BREAK(ast_node *node);
 char *gen_quad_AST_FUNCTION_DEF(ast_node *node);
+ast_node *strip_deref_type(ast_node *type);
+long long unsigned int get_size_of_expr(ast_node *node);
+long long unsigned int get_size_of_ident(ast_node *node);
+long long unsigned int get_size_of_type(ast_node *type);
 
 #endif

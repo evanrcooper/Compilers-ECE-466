@@ -13,12 +13,63 @@ int *(*ptr_int_ptr_ary_)[];
 unsigned char unsigned_char_fn_() {
     return 'x';
 }
-long long long long_long_long_;
 int a;
 int i;
 i = 0;
 a = 4;
-for (; i < a; i++) {
-    a++;
-}
 a = 0;
+
+int x;
+int y;
+int z;
+
+int arr1[10];
+int arr2[5][4];
+int *ptr;
+
+int get_five() {
+    return 5;
+}
+
+int val;
+int square() {
+    int a;
+    a = 1233;
+    return val * val + a;
+}
+
+int main2() {
+    x = 1;
+    y += 2;
+    z = y * 4;
+
+    ptr = &x;
+    z = *ptr;
+
+    arr1[0] = 7;
+    arr1[1] = arr1[0] + 3;
+
+    z = arr2[2][3];
+
+    x = get_five();
+    y = square();
+
+    z = (x > y) ? x : y;
+
+    int i;
+    i = 0;
+    while (i < 5) {
+        if (i == 2) {
+            i++;
+            continue;
+        }
+        if (i == 4) break;
+        i++;
+    }
+
+    for (i = 0; i < 3; i++) {
+        x += i;
+    }
+
+    return x + y + z;
+}
