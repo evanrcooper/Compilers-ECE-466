@@ -124,6 +124,8 @@
 %type <node> compound-start
 %type <node> program
 
+%expect 8
+
 %%
 
 /* C-99 Standard: http://faculty.cooper.edu/hak/ece466/n1124.pdf */
@@ -132,7 +134,7 @@
 /* 6.5 EXPRESSIONS */
 
 program:
-    /* empty */
+    /* empty */ {$$ = NULL;}
     | program external-declaration {
         print_ast_tree($2);
         gen_quad($2);
@@ -500,7 +502,7 @@ type-specifier:
         $$ = NULL;
     }
     | SHORT {
-        if (CURRENT_TYPE_BUILDER.is_void) {specifiers
+        if (CURRENT_TYPE_BUILDER.is_void) {
             yyerror("conflict between 'short' and 'void' specifiers");
         } else if (CURRENT_TYPE_BUILDER.is_long_long) {
             yyerror("conflict between 'short' and 'long long' specifiers");
