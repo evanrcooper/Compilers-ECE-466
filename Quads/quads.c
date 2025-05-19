@@ -26,18 +26,18 @@ void emit_quad(quad_op op, char *dest, char *src1, char *src2) {
 char *current_continue_label = NULL;
 char *current_break_label = NULL;
 
-int temp_count = 0;
-int label_count = 0;
+int temp_count = 1;
+int label_count = 1;
 
 char *new_temp_reg() {
     char buf[64];
-    sprintf(buf, "%%T%015d", temp_count++);
+    sprintf(buf, "%%T%d", temp_count++);
     return strdup(buf);
 }
 
 char *new_label() {
     char buf[64];
-    sprintf(buf, ".BB%014d", label_count++);
+    sprintf(buf, ".BB%d", label_count++);
     return strdup(buf);
 }
 
@@ -94,11 +94,15 @@ const char *quad_op_to_str(quad_op op) {
         case Q_NOP:
             return "NOP";
         case Q_LABEL:
-            return ".";
+            return "LABEL:";
         case Q_BRZ:
             return "BRZ";
         case Q_BRNZ:
             return "BRNZ";
+        case Q_SHL:
+            return "SHL";
+        case Q_SHR:
+            return "SHR";
         default:
             return "UNKNOWN QUAD";
     }
@@ -106,7 +110,7 @@ const char *quad_op_to_str(quad_op op) {
 
 void print_quad(quad_ll_node *q) {
     printf(
-        "%-10s %s %s %s\n", 
+        "%s %s %s %s\n", 
         quad_op_to_str(q->q.op), 
         q->q.dest ? q->q.dest : "", 
         q->q.src1 ? q->q.src1 : "", 
@@ -144,10 +148,6 @@ char *gen_quad(ast_node *node) {
             return gen_quad_AST_BINOP(node);
         case AST_TRIOP:
             return gen_quad_AST_TRIOP(node);
-        case AST_PRIMITIVE_TYPE:
-            return gen_quad_AST_PRIMITIVE_TYPE(node);
-        case AST_TYPE_MOD:
-            return gen_quad_AST_TYPE_MOD(node);
         case AST_BLOCK:
             return gen_quad_AST_BLOCK(node);
         case AST_FUNCTION_CALL:
@@ -234,7 +234,19 @@ char *gen_quad_AST_IDENT(ast_node *node) {
 }
 
 char *gen_quad_AST_BINOP(ast_node *node) {
-    if (node->val.binop.op == B_EQ) {
+    if (
+        node->val.binop.op == B_EQ
+        || node->val.binop.op == B_TIMESEQ
+        || node->val.binop.op == B_DIVEQ
+        || node->val.binop.op == B_MODEQ
+        || node->val.binop.op == B_PLUSEQ
+        || node->val.binop.op == B_MINUSEQ
+        || node->val.binop.op == B_SHLEQ
+        || node->val.binop.op == B_SHREQ
+        || node->val.binop.op == B_BIT_ANDEQ
+        || node->val.binop.op == B_BIT_OREQ
+        || node->val.binop.op == B_BIT_XOREQ
+    ) {
         ast_node *lhs = node->val.binop.left;
         ast_node *rhs = node->val.binop.right;
 
@@ -243,12 +255,48 @@ char *gen_quad_AST_BINOP(ast_node *node) {
             char *val = gen_quad(rhs);
             emit_quad(Q_STORE, addr, val, NULL);
             return addr;
-        } else {
-            char *dst = gen_quad(lhs);
-            char *val = gen_quad(rhs);
-            emit_quad(Q_ASSIGN, dst, val, NULL);
-            return dst;
+        } 
+        char *dst = gen_quad(lhs);
+        char *val = gen_quad(rhs);
+        switch (node->val.binop.op) {
+            case B_TIMESEQ:
+                emit_quad(Q_MUL, dst, dst, val);
+                break;
+            case B_DIVEQ:
+                emit_quad(Q_DIV, dst, dst, val);
+                break;
+            case B_MODEQ:
+                emit_quad(Q_MOD, dst, dst, val);
+                break;
+            case B_PLUSEQ:
+                emit_quad(Q_ADD, dst, dst, val);
+                break;
+            case B_MINUSEQ:
+                emit_quad(Q_SUB, dst, dst, val);
+                break;
+            case B_SHLEQ:
+                emit_quad(Q_SHL, dst, dst, val);
+                break;
+            case B_SHREQ:
+                emit_quad(Q_SHR, dst, dst, val);
+                break;
+            case B_BIT_ANDEQ:
+                emit_quad(Q_AND, dst, dst, val);
+                break;
+            case B_BIT_OREQ:
+                emit_quad(Q_OR, dst, dst, val);
+                break;
+            case B_BIT_XOREQ:
+                emit_quad(Q_XOR, dst, dst, val);
+                break;
+            case B_EQ:
+                emit_quad(Q_ASSIGN, dst, val, NULL);
+                break;
+            default:
+                gen_nop();
+                break;
         }
+        return dst;
     } else {
         char *lhs = gen_quad(node->val.binop.left);
         char *rhs = gen_quad(node->val.binop.right);
@@ -293,6 +341,12 @@ char *gen_quad_AST_BINOP(ast_node *node) {
                 break;
             case B_LOG_OR: 
                 op = Q_OR; 
+                break;
+            case B_SHL: 
+                op = Q_SHL; 
+                break;
+            case B_SHR: 
+                op = Q_SHR; 
                 break;
             default: 
                 op = Q_NOP;
@@ -369,6 +423,13 @@ char *gen_quad_AST_CHARLIT(ast_node *node) {
     char *buf = malloc(8);
     sprintf(buf, "%d", (int)node->val.charlit.val);
     return buf;
+}
+
+char *gen_quad_AST_STRLIT(ast_node *node) {
+    static int strlit_count = 0;
+    char label[32];
+    sprintf(label, ".LC%d", strlit_count++);
+    return strdup(label);
 }
 
 char *gen_quad_AST_COMPOUND_STATEMENT(ast_node *node) {
@@ -471,7 +532,6 @@ char *gen_quad_AST_CONTINUE(ast_node *node) {
 }
 
 char *gen_quad_AST_BREAK(ast_node *node) {
-    extern char *current_break_label;
     emit_quad(Q_BR, current_break_label, NULL, NULL);
     return NULL;
 }

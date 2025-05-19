@@ -7,6 +7,7 @@ typedef enum {
     Q_ADD = 1, Q_SUB, Q_MUL, Q_DIV, Q_MOD,
     Q_LT, Q_GT, Q_LTE, Q_GTE, Q_EQ, Q_NE,
     Q_AND, Q_OR, Q_XOR,
+    Q_SHL, Q_SHR,
     Q_LOAD, Q_STORE,
     Q_LEA, Q_CALL, Q_RET,
     Q_CMP, Q_BR, Q_BRZ, Q_BRNZ,
@@ -28,13 +29,13 @@ typedef struct quad_ll {
     struct quad_ll *next;
 } quad_ll_node;
 
-void new_quad(quad_op op, char *dest, char *src1, char *src2);
+void emit_quad(quad_op op, char *dest, char *src1, char *src2);
 char *new_temp_reg();
 char *new_label();
 const char *quad_op_to_str(quad_op op);
 void print_quad(quad_ll_node *q);
 void print_all_quads();
-char *emit_quad(ast_node *node);
+char *gen_quad(ast_node *node);
 char *gen_nop();
 char *gen_quad_AST_UNOP(ast_node *node);
 char *gen_quad_AST_BINOP(ast_node *node);

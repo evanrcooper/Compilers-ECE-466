@@ -134,13 +134,13 @@
 program:
     /* empty */
     | program expression {
-        generate_quads($2);
+        gen_quad($2);
     }
     | program function-definition {
-        generate_quads($2);
+        gen_quad($2);
     }
     | program external-declaration {
-        generate_quads($2);
+        gen_quad($2);
     }
 
 ident-expr:
@@ -833,7 +833,10 @@ int main(int argc, char **argv) {
     } else {
         yyin = stdin;
     }
+
     yyparse();
+    printf("\n\n");
+    print_all_quads();
 
     return 0;
 }
