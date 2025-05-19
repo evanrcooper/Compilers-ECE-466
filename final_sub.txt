@@ -1,0 +1,22 @@
+run these commands:
+
+make clean # careful this will run 'rm -rf *.h.gch Parser/*.out Lexer/lex.yy.c Parser/parser.tab.* Lexer/*.out SymbolTable/*.out ./Quads/*.out'
+make # compile the compiler
+./Parser/parser.out sample.c 
+
+# run on sample code 
+# it will print out the AST tree and the quads. 
+# The symbol table printing was turned off 
+# but can be re-enabled with the macros in SymbolTable/sym_tab.h
+# and also make sure to uncomment these near line 800 of parser.y:
+# external-declaration:
+#     declaration {
+#         // print_symbol_table(CURRENT_SCOPE, 0); // <---- uncomment
+#         $$ = NULL;
+#     }
+#     | function-definition {
+#         // print_symbol_table(CURRENT_SCOPE, 0); // <---- uncomment
+#         $$ = $1;
+#     }
+
+# there are definitely still some bugs but it is a significant portion of the quads working so I hope you enjoy...

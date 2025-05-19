@@ -500,7 +500,7 @@ type-specifier:
         $$ = NULL;
     }
     | SHORT {
-        if (CURRENT_TYPE_BUILDER.is_void) {
+        if (CURRENT_TYPE_BUILDER.is_void) {specifiers
             yyerror("conflict between 'short' and 'void' specifiers");
         } else if (CURRENT_TYPE_BUILDER.is_long_long) {
             yyerror("conflict between 'short' and 'long long' specifiers");

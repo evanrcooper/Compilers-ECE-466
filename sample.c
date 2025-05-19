@@ -76,5 +76,23 @@ int main2() {
     a_indexed_1 = ary_12_10[1];
     a_indexed_2 = a_indexed_1[2];
 
+    do {
+        x += 24;
+    } while (x+ 100 < 100000);
+
+    if (x) {
+        x++;
+    } else {
+        x--;
+    }
+
+    if (y) {
+        y++;
+    } else if (x) {
+        x--;
+    } else {
+        z++;
+    }
+
     return x + y + z;
 }
