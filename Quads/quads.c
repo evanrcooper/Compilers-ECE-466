@@ -547,7 +547,12 @@ char *gen_quad_AST_FUNCTION_DEF(ast_node *node) {
         fprintf(stderr, "Missing function symbol in definition\n");
         return NULL;
     }
-
+    char *label = malloc(strlen(name) + 5); // ".fn_" = 4 chars + 1 for '\0'
+    if (!label) {
+        perror("malloc failed");
+        exit(1);
+    }
+    sprintf(label, ".fn_%s", name);
     emit_quad(Q_LABEL, name, NULL, NULL);
     gen_quad(node->val.fn_def.content);
     return NULL;
@@ -601,10 +606,8 @@ long long unsigned int get_size_of_expr(ast_node *node) {
 
         case AST_BINOP:
         case AST_TRIOP: {
-            long long unsigned int l = get_size_of_expr(
-                node->node_type == AST_BINOP ? node->val.binop.left : node->val.triop.center);
-            long long unsigned int r = get_size_of_expr(
-                node->node_type == AST_BINOP ? node->val.binop.right : node->val.triop.right);
+            long long unsigned int l = get_size_of_expr(node->node_type == AST_BINOP ? node->val.binop.left : node->val.triop.center);
+            long long unsigned int r = get_size_of_expr(node->node_type == AST_BINOP ? node->val.binop.right : node->val.triop.right);
             return (l < 4 && r < 4) ? 4 : (l > r ? l : r);
         }
 

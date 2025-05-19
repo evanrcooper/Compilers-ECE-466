@@ -137,14 +137,6 @@ program:
         print_ast_tree($2);
         gen_quad($2);
     }
-    | program expression-statement {
-        print_ast_tree($2);
-        gen_quad($2);
-    }
-    | program statement {
-        print_ast_tree($2);
-        gen_quad($2);
-    }
 
 ident-expr:
     IDENT {

@@ -15,9 +15,11 @@ unsigned char unsigned_char_fn_() {
 }
 int a;
 int i;
-i = 0;
-a = 4;
-a = 0;
+void init() {
+    i = 0;
+    a = 4;
+    a = 0;
+}
 
 int x;
 int y;
@@ -69,10 +71,10 @@ int main2() {
         x += i;
     }
 
+    int ary_12_10[12][10];
+    int *a_indexed_1, a_indexed_2;
+    a_indexed_1 = ary_12_10[1];
+    a_indexed_2 = a_indexed_1[2];
+
     return x + y + z;
 }
-
-int ary_12_10[12][10];
-int a_indexed_1[], a_indexed_2;
-a_indexed_1 = ary_12_10[1];
-a_indexed_2 = a_indexed_1[2];

@@ -23,6 +23,8 @@ typedef struct {
     char *dest;
     char *src1;
     char *src2;
+    struct symbol_table_entry_ll_node *entry_src1;
+    struct symbol_table_entry_ll_node *entry_src2;
 } quad;
 
 typedef struct quad_ll {
